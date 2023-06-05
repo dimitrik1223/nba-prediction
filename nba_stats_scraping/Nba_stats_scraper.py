@@ -39,3 +39,42 @@ class Nba_stats_scraper:
     mvp_stats = pd.concat(mvp_dfs).reset_index(drop=True)
 
     return mvp_stats
+
+  def scrape_per_game_stats(self):
+    per_game_stats_dfs = []
+    for year in self.years:
+      url_start = f"https://www.basketball-reference.com/leagues/NBA_{year}_per_game.html"
+      data = requests.get(url_start)
+      page = self.file_writer("player_stats/", year, data)
+      soup = BeautifulSoup(page, "html.parser")
+      per_game_stats = soup.find_all(id="per_game_stats")
+      per_game_stats = pd.read_html(str(per_game_stats))[0]
+      per_game_stats["year"] = year
+      per_game_stats_dfs.append(per_game_stats)
+    past_per_game_stats = pd.concat(per_game_stats_dfs).reset_index(drop=True)
+
+    return past_per_game_stats
+
+  def scrape_team_standings(self):
+    team_standings = []
+    for year in self.years:
+      team_url = f"https://www.basketball-reference.com/leagues/NBA_{year}_standings.html"
+      data = requests.get(team_url)
+      page = self.file_writer("team_standings/", year, data)
+      soup = BeautifulSoup(page, "html.parser")
+      for header in soup.find_all("tr", class_="thead"):
+        header.decompose()
+      team_standings_e = soup.find(id="divs_standings_E")
+      team_standings_w = soup.find(id="divs_standings_W")
+      df_standings_e = pd.read_html(str(team_standings_e))[0]
+      df_standings_w = pd.read_html(str(team_standings_w))[0]
+      df_standings_e.rename(columns={"Eastern Conference": "Team"}, inplace=True)
+      df_standings_e["Conference"] = "Eastern"
+      df_standings_w.rename(columns={"Western Conference": "Team"}, inplace=True)
+      df_standings_w["Conference"] = "Western"
+      df_standings_all = pd.concat([df_standings_e, df_standings_w])
+      df_standings_all["Year"] = year
+      team_standings.append(df_standings_all)
+    all_team_standings = pd.concat(team_standings)
+
+    return all_team_standings
