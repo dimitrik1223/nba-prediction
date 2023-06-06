@@ -10,6 +10,7 @@ class Nba_stats_scraper:
   def __init__(self, year_start, year_end):
     self.year_start = year_start
     self.year_end = year_end
+    self.years = list(range(self.year_start, self.year_end))
     
   def file_writer(self, dir_name, year, data):
     cwd = os.getcwd()
@@ -25,10 +26,13 @@ class Nba_stats_scraper:
   
   def scrape_mvp_stats(self):
     mvp_dfs = []
-    years = list(range(self.year_start, self.year_end))
-    for year in years:
+    for year in self.years:
       url = f"https://www.basketball-reference.com/awards/awards_{year}.html" 
-      data = requests.get(url)
+      try:
+        data = requests.get(url)
+        data.raise_for_status()
+      except requests.exceptions.RequestException as e:
+        print(f"Network request error: {e}")
       page = self.file_writer("mvp/", year, data)
       soup = BeautifulSoup(page, "html.parser")
       soup.find('tr', class_="over_header").decompose()
@@ -44,7 +48,11 @@ class Nba_stats_scraper:
     per_game_stats_dfs = []
     for year in self.years:
       url_start = f"https://www.basketball-reference.com/leagues/NBA_{year}_per_game.html"
-      data = requests.get(url_start)
+      try:
+        data = requests.get(url_start)
+        data.raise_for_status()
+      except requests.exceptions.RequestException as e:
+        print(f"Network request error: {e}")
       page = self.file_writer("player_stats/", year, data)
       soup = BeautifulSoup(page, "html.parser")
       per_game_stats = soup.find_all(id="per_game_stats")
@@ -59,7 +67,11 @@ class Nba_stats_scraper:
     team_standings = []
     for year in self.years:
       team_url = f"https://www.basketball-reference.com/leagues/NBA_{year}_standings.html"
-      data = requests.get(team_url)
+      try:
+        data = requests.get(team_url)
+        data.raise_for_status()
+      except requests.exceptions.RequestException as e:
+        print(f"Network request error: {e}")
       page = self.file_writer("team_standings/", year, data)
       soup = BeautifulSoup(page, "html.parser")
       for header in soup.find_all("tr", class_="thead"):
@@ -78,3 +90,4 @@ class Nba_stats_scraper:
     all_team_standings = pd.concat(team_standings)
 
     return all_team_standings
+    
