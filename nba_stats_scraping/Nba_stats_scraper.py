@@ -1,5 +1,6 @@
-import requests
 import os
+import requests
+import time
 import pandas as pd
 import shutil
 
@@ -11,29 +12,47 @@ class Nba_stats_scraper:
     self.year_start = year_start
     self.year_end = year_end
     self.years = list(range(self.year_start, self.year_end))
+  
+  def make_request(self, url):
+      try: 
+          response = requests.get(url)
+          if response.status_code == 429:
+              raise requests.exceptions.HTTPError("Rate limit exceeded")
+          response.raise_for_status()
+          return response
+      except requests.exceptions.RequestException as e:
+          print(f"Network request error: {e}")
+          return response
+
+  def retry_request(self, url, max_retries=3):
+      retries = 0
+      while retries < max_retries:
+          response = self.make_request(url)
+          if response.status_code == 429:
+              retries += 1
+              sleep_duration = int(response.headers.get("Retry-After", 1))
+              print(f"Retrying after {sleep_duration} seconds")
+              time.sleep(sleep_duration)
+          else:
+              return response 
     
-  def file_writer(self, dir_name, year, data):
+  def file_writer(self, dir_name, year, response):
     cwd = os.getcwd()
     if not os.path.isdir(f"{cwd}/{dir_name}/"):
         os.mkdir(f"{dir_name}/")
     with open(f"{dir_name}/{year}.html", "w+") as file:
-        file.write(data.text)
+        file.write(response.text)
     with open(f"{dir_name}/{year}.html") as file:
         page = file.read()
     
     return page
-    
   
   def scrape_mvp_stats(self):
     mvp_dfs = []
     for year in self.years:
       url = f"https://www.basketball-reference.com/awards/awards_{year}.html" 
-      try:
-        data = requests.get(url)
-        data.raise_for_status()
-      except requests.exceptions.RequestException as e:
-        print(f"Network request error: {e}")
-      page = self.file_writer("mvp/", year, data)
+      response = self.retry_request(url, max_retries=3)
+      page = self.file_writer("mvp/", year, response)
       soup = BeautifulSoup(page, "html.parser")
       soup.find('tr', class_="over_header").decompose()
       mvp_table = soup.find_all(id="mvp")
@@ -47,13 +66,9 @@ class Nba_stats_scraper:
   def scrape_per_game_stats(self):
     per_game_stats_dfs = []
     for year in self.years:
-      url_start = f"https://www.basketball-reference.com/leagues/NBA_{year}_per_game.html"
-      try:
-        data = requests.get(url_start)
-        data.raise_for_status()
-      except requests.exceptions.RequestException as e:
-        print(f"Network request error: {e}")
-      page = self.file_writer("player_stats/", year, data)
+      url = f"https://www.basketball-reference.com/leagues/NBA_{year}_per_game.html"
+      response = self.retry_request(url, max_retries=3)
+      page = self.file_writer("player_stats/", year, response)
       soup = BeautifulSoup(page, "html.parser")
       per_game_stats = soup.find_all(id="per_game_stats")
       per_game_stats = pd.read_html(str(per_game_stats))[0]
@@ -66,13 +81,9 @@ class Nba_stats_scraper:
   def scrape_team_standings(self):
     team_standings = []
     for year in self.years:
-      team_url = f"https://www.basketball-reference.com/leagues/NBA_{year}_standings.html"
-      try:
-        data = requests.get(team_url)
-        data.raise_for_status()
-      except requests.exceptions.RequestException as e:
-        print(f"Network request error: {e}")
-      page = self.file_writer("team_standings/", year, data)
+      url = f"https://www.basketball-reference.com/leagues/NBA_{year}_standings.html"
+      response = self.retry_request(url, max_retries=3)
+      page = self.file_writer("team_standings/", year, response)
       soup = BeautifulSoup(page, "html.parser")
       for header in soup.find_all("tr", class_="thead"):
         header.decompose()
@@ -90,4 +101,3 @@ class Nba_stats_scraper:
     all_team_standings = pd.concat(team_standings)
 
     return all_team_standings
-    

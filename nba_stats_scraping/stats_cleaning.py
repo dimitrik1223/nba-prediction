@@ -55,6 +55,8 @@ def clean_data(mvp_df, players_df, team_standings_df):
 
 	players_df["Team"] = players_df["Team"].map(team_name_mapping)
 
+	return mvp_df, players_df, team_standings_df
+
 def create_stats_basetable(mvp_df, players_df, team_standings_df):
 	all_stats_df = mvp_df.merge(
 		players_df, how="outer", on=["Player", "Year"]
