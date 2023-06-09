@@ -11,5 +11,4 @@ def run(year_start, year_end):
 	)
 	all_stats = create_stats_basetable(mvp_stats, per_game_stats, team_standings)
 	
-	return all_stats
-	
+	return all_stats.to_dict(orient="dict")

@@ -52,6 +52,7 @@ class Nba_stats_scraper:
     for year in self.years:
       url = f"https://www.basketball-reference.com/awards/awards_{year}.html" 
       response = self.retry_request(url, max_retries=3)
+      time.sleep(5)
       page = self.file_writer("mvp/", year, response)
       soup = BeautifulSoup(page, "html.parser")
       soup.find('tr', class_="over_header").decompose()
@@ -68,11 +69,12 @@ class Nba_stats_scraper:
     for year in self.years:
       url = f"https://www.basketball-reference.com/leagues/NBA_{year}_per_game.html"
       response = self.retry_request(url, max_retries=3)
+      time.sleep(5)
       page = self.file_writer("player_stats/", year, response)
       soup = BeautifulSoup(page, "html.parser")
       per_game_stats = soup.find_all(id="per_game_stats")
       per_game_stats = pd.read_html(str(per_game_stats))[0]
-      per_game_stats["year"] = year
+      per_game_stats["Year"] = year
       per_game_stats_dfs.append(per_game_stats)
     past_per_game_stats = pd.concat(per_game_stats_dfs).reset_index(drop=True)
 
@@ -83,6 +85,7 @@ class Nba_stats_scraper:
     for year in self.years:
       url = f"https://www.basketball-reference.com/leagues/NBA_{year}_standings.html"
       response = self.retry_request(url, max_retries=3)
+      time.sleep(5)
       page = self.file_writer("team_standings/", year, response)
       soup = BeautifulSoup(page, "html.parser")
       for header in soup.find_all("tr", class_="thead"):
