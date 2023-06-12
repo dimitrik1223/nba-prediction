@@ -1,13 +1,13 @@
 import pandas as pd
 
 def extract_total_row(df):
-  if df.shape[0] == 1:
-    return df
-  else:
-    team = df.iloc[-1, :]["Team"]
-    df = df[df["Team"] == "TOT"]
-    df["Team"] = team
-    return df
+	if df.shape[0] == 1:
+		return df
+	else:
+		team = df.iloc[-1, :]["Team"]
+		df = df[df["Team"] == "TOT"]
+		df["Team"] = team
+		return df
 
 def clean_data(mvp_df, players_df, team_standings_df):
 	mvp = mvp_df[["Player", "Year", "Pts Won", "Pts Max", "Share"]]
@@ -45,9 +45,10 @@ def clean_data(mvp_df, players_df, team_standings_df):
 		"OKC": "Oklahoma City Thunder",
 		"ORL": "Orlando Magic",
 		"PHI": "Philadelphia 76ers",
-		"PHO": "Devin Booker",
-		"POR": "Portland Trailblazers",
-		"SAC": "Sacremento Kings",
+		"PHO": "Phoenix Suns",
+		"POR": "Portland Trail Blazers",
+		"SAC": "Sacramento Kings",
+		"SAS": "San Antonio Spurs",
 		"TOR": "Toronto Raptors",
 		"UTA": "Utah Jazz",
 		"WAS": "Washington Wizards"
@@ -60,13 +61,23 @@ def clean_data(mvp_df, players_df, team_standings_df):
 def create_stats_basetable(mvp_df, players_df, team_standings_df):
 	all_stats_df = mvp_df.merge(
 		players_df, how="outer", on=["Player", "Year"]
-    ).merge(
+	).merge(
 		team_standings_df, how="outer", on=["Team", "Year"]
 	)
 	for col in ["Pts Won", "Pts Max", "Share"]:
-  		all_stats_df[col].fillna(0, inplace=True)
+		all_stats_df[col].fillna(0, inplace=True)
 	all_stats_df.apply(pd.to_numeric, errors="ignore")
 	all_stats_df["GB"] = all_stats_df["GB"].str.replace("—", "0")
 	all_stats_df["GB"] = all_stats_df["GB"].apply(pd.to_numeric)
+	stats = all_stats_df.fillna(0)
+	for col in stats.columns:
+		stats[col] = pd.to_numeric(stats[col], errors="ignore")
+	predictors = stats[[
+    col for col in stats.columns if stats[col].dtype in ("float64", "int64") 
+	and col not in ("Pts Won", "Pts Max", "Share")
+	]]
 
-	return all_stats_df.to_dict(orient="dict")
+	return stats.to_dict(orient="dict")
+
+	
+	
