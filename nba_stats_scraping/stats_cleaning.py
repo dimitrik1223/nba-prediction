@@ -72,12 +72,8 @@ def create_stats_basetable(mvp_df, players_df, team_standings_df):
 	stats = all_stats_df.fillna(0)
 	for col in stats.columns:
 		stats[col] = pd.to_numeric(stats[col], errors="ignore")
-	predictors = stats[[
-    col for col in stats.columns if stats[col].dtype in ("float64", "int64") 
-	and col not in ("Pts Won", "Pts Max", "Share")
-	]]
 
-	return stats.to_dict(orient="dict")
+	return stats
 
 	
 	
