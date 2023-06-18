@@ -127,4 +127,4 @@ def train_nn(df):
 			else:
 				pbar.set_description(f"Epoch: {epoch}, tloss {loss:}")
 
-	pickle.dump(model, open('mvp_model.pkl', 'wb'))
+	pickle.dump(model, open('flask_app/mvp_model.pkl', 'wb'))
