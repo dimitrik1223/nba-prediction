@@ -154,7 +154,14 @@ disable=print-statement,
         exception-escape,
         comprehension-escape,
         bad-indentation,
-        missing-module-docstring
+        missing-module-docstring,
+        consider-using-from-import,
+        too-few-public-methods,
+        super-with-arguments,
+        too-many-locals,
+        invalid-name,
+        no-self-use
+        
         
 
 # Enable the message, report, category or checker with the given id(s). You can
