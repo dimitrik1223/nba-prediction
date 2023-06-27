@@ -1,44 +1,53 @@
 import os
-import os
-import os
-import requests
 import time
+import requests
 import pandas as pd
-import shutil
 
 from bs4 import BeautifulSoup
 
 class Nba_stats_scraper:
+	"""
+	basketball-references.com scraping class
+	"""
 
 	def __init__(self, year_start, year_end):
 		self.year_start = year_start
 		self.year_end = year_end
 		self.years = list(range(self.year_start, self.year_end))
-	
+
 	def make_request(self, url):
-			try: 
-					response = requests.get(url)
-					if response.status_code == 429:
-							raise requests.exceptions.HTTPError("Rate limit exceeded")
-					response.raise_for_status()
-					return response
-			except requests.exceptions.RequestException as e:
-					print(f"Network request error: {e}")
-					return response
+		"""
+		Make get request to basketball-references.com
+		"""
+		try:
+			response = requests.get(url)
+			if response.status_code == 429:
+				raise requests.exceptions.HTTPError("Rate limit exceeded")
+			response.raise_for_status()
+			return response
+		except requests.exceptions.RequestException as e:
+			print(f"Network request error: {e}")
+		return response
 
 	def retry_request(self, url, max_retries=3):
-			retries = 0
-			while retries < max_retries:
-					response = self.make_request(url)
-					if response.status_code == 429:
-							retries += 1
-							sleep_duration = int(response.headers.get("Retry-After", 1))
-							print(f"Retrying after {sleep_duration} seconds")
-							time.sleep(sleep_duration)
-					else:
-							return response 
-		
+		"""
+		Retry on get requests
+		"""
+		retries = 0
+		while retries < max_retries:
+			response = self.make_request(url)
+			if response.status_code == 429:
+				retries += 1
+				sleep_duration = int(response.headers.get("Retry-After", 1))
+				print(f"Retrying after {sleep_duration} seconds")
+				time.sleep(sleep_duration)
+			else:
+				return response
+
 	def file_writer(self, dir_name, year, response):
+		"""
+		Write HTML files to directory
+		"""
 		cwd = os.getcwd()
 		if not os.path.isdir(f"{cwd}/{dir_name}/"):
 				os.mkdir(f"{dir_name}/")
@@ -46,13 +55,16 @@ class Nba_stats_scraper:
 				file.write(response.text)
 		with open(f"{dir_name}/{year}.html") as file:
 				page = file.read()
-		
+
 		return page
-	
+
 	def scrape_mvp_stats(self):
+		"""
+		Scrape dataset of historical MVP award voting statistics
+		"""
 		mvp_dfs = []
 		for year in self.years:
-			url = f"https://www.basketball-reference.com/awards/awards_{year}.html" 
+			url = f"https://www.basketball-reference.com/awards/awards_{year}.html"
 			response = self.retry_request(url, max_retries=3)
 			time.sleep(5)
 			page = self.file_writer("nba_stats_scraping/mvp/", year, response)
@@ -67,6 +79,9 @@ class Nba_stats_scraper:
 		return mvp_stats
 
 	def scrape_per_game_stats(self):
+		"""
+		Scrape historical dataset of player per game statistics
+		"""
 		per_game_stats_dfs = []
 		for year in self.years:
 			url = f"https://www.basketball-reference.com/leagues/NBA_{year}_per_game.html"
@@ -83,6 +98,9 @@ class Nba_stats_scraper:
 		return past_per_game_stats
 
 	def scrape_team_standings(self):
+		"""
+		Scrape historical dataset of team standings statistics
+		"""
 		team_standings = []
 		for year in self.years:
 			url = f"https://www.basketball-reference.com/leagues/NBA_{year}_standings.html"
