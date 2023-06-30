@@ -136,7 +136,7 @@ def predict(model, data):
 	"""
 	Prediction method
 	"""
-	tensor = torch.Tensor(data.values, device="cpu").type(torch.float32)
+	tensor = torch.Tensor(data, device="cpu").type(torch.float32)
 	preds = model(tensor).detach().numpy()
 	# Negative preds to 0
 	mvp_preds = np.where(preds < 0, 0, preds)
@@ -155,8 +155,7 @@ def get_predicted_mvp(data, preds, year):
 		mvp_pred = year_stats.loc[year_stats["Predicted Pts Won"] == max_pred_pts, "Player"].iloc[0]
 		mvp = year_stats.loc[year_stats["Pts Won"] == max_pts, "Player"].iloc[0]
 		print(f"{year} - Predicted MVP: {mvp_pred}, Actual MVP: {mvp}")
-
-		return mvp_pred
+		return mvp
 
 	year_start = data["Year"].min()
 	year_end = data["Year"].max()
