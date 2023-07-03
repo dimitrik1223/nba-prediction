@@ -21,8 +21,8 @@ def main(postgres_config, year_start=2023, year_end=2024) -> None:
 		mvp_stats, per_game_stats, team_standings
 	)
 	all_stats = create_stats_basetable(mvp_stats, per_game_stats, team_standings)
-	predictors = get_predictors(all_stats)
 	load_db(dfs=all_stats, table_names="all_stats", postgres_config=postgres_config)
+	predictors = get_predictors(all_stats)
 	load_db(dfs=predictors, table_names="mvp_predictors", postgres_config=postgres_config)
 
 if __name__ == "__main__":
