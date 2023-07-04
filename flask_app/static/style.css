@@ -1,5 +1,6 @@
 body {
-	background-color: lightblue;
+	background-color: white;
+	text-align: center;
   }
   
   h1 {
@@ -7,12 +8,48 @@ body {
 	font-size: 65px;
 	color: black;
 	margin-left: 20px;
+	margin-top: 2px;
 	text-align: center;
   }
+
+#season_div {
+	background-color: #17408B;
+	margin: auto;
+	height: 45px;
+	width: 325px;
+	align-content: center;
+	border: 3px red;
+
+}
+
+#season_label {
+	font-style: "Helvetica Neue";
+	color: white;
+}
+
+#mvp_trophy {
+	height: 200px
+}
 
 #form1 {
 	background-color: lightblue;
 	color: black;
 	padding: 40px;
-	text-align: center;
 }
+
+.dropdown {
+	height: 40px;
+	width: 100px;
+	padding: 5px 5px;
+	border: 10px black;
+	background-color: lightgrey;
+}
+
+.button {
+	height: auto;
+	width: auto;
+	background-color: red;
+	color: white;
+	font-size: 20px;
+}
+

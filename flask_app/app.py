@@ -41,8 +41,9 @@ def predict_mvp():
 	""")
 	years = cur.fetchall()
 	first_year, last_year = years[0][0], years[0][1]
-	years = range(first_year, (last_year))
-	nba_seasons = [f"{str(year)}-{str(year + 1)}" for year in years]
+	years = range(first_year, (last_year + 1))
+	print(years)
+	nba_seasons = [f"{str(year - 1)}-{str(year)}" for year in years]
 	year_season_map = dict(zip(nba_seasons, years))
 	with open("mvp_model.pkl", "rb") as file:
 		model = pickle.load(file)
@@ -52,7 +53,7 @@ def predict_mvp():
 		year = year_season_map[season]
 		mvp_announcement = get_predicted_mvp(data=all_stats_df, preds=preds, year=year)
 		return mvp_announcement
-	return render_template("mvp.jinja", nba_seasons=nba_seasons)
+	return render_template("mvp_predictor/index.jinja", nba_seasons=nba_seasons)
 
 if __name__ == "__main__":
 	app.run(host="0.0.0.0")
