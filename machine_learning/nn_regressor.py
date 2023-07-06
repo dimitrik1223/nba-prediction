@@ -153,9 +153,12 @@ def get_predicted_mvp(data, preds, year):
 		max_pred_pts = year_stats["Predicted Pts Won"].max()
 		max_pts = year_stats["Pts Won"].max()
 		mvp_pred = year_stats.loc[year_stats["Predicted Pts Won"] == max_pred_pts, "Player"].iloc[0]
-		mvp = year_stats.loc[year_stats["Pts Won"] == max_pts, "Player"].iloc[0]
-		mvp_announcement = f"{year} - Predicted MVP: {mvp_pred}, Actual MVP: {mvp}"
-		return mvp_announcement
+		mvp_actual = year_stats.loc[year_stats["Pts Won"] == max_pts, "Player"].iloc[0]
+		mvp_results = {
+			"mvp_pred": mvp_pred,
+			"mvp_actual": mvp_actual
+		}
+		return mvp_results
 
 	year_start = data["Year"].min()
 	year_end = data["Year"].max()

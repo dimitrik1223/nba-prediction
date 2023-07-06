@@ -1,16 +1,23 @@
 body {
 	background-color: white;
 	text-align: center;
-  }
+}
   
-  h1 {
+h1 {
 	font-family: "Helvetica Neue";
 	font-size: 65px;
 	color: black;
 	margin-left: 20px;
 	margin-top: 2px;
 	text-align: center;
-  }
+}
+
+h3 {
+	font-family: "Helvetica Neue";
+	font-size: 13px;
+	color: black;
+	text-align: center;
+}
 
 #season_div {
 	background-color: #17408B;
@@ -45,11 +52,62 @@ body {
 	background-color: lightgrey;
 }
 
-.button {
-	height: auto;
-	width: auto;
-	background-color: red;
-	color: white;
-	font-size: 20px;
+.button:hover {
+	color: blue;
+	background-color: white;
 }
 
+.page_div {
+	margin-top: 300px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	text-align: center;
+}
+
+.button_div {
+	margin-top: 10px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	text-align: center;
+}
+  
+.center {
+	text-align: center;
+}
+
+.button_group {
+	text-align: center;
+
+}
+
+.yes_button{
+	display: flex;
+	margin-left: 20px;
+	margin-right: 20px;
+	background-color: #337ab7;
+	color: #fff;
+	border: none;
+	border-radius: 5px;
+	cursor: pointer;
+}
+
+.no_button{
+	display: flex;
+	margin-left: 20px;
+	margin-right: 20px;
+	background-color: red;
+	color: #fff;
+	border: none;
+	border-radius: 5px;
+	cursor: pointer;
+}
+  
+.yes_button:hover {
+	background-color: #23527c;
+}
+
+.no_button:hover {
+	background-color: orange;
+}

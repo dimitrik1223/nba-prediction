@@ -14,11 +14,13 @@
     <form method="POST">
       <label id="season_label" for="dropdown">Choose an NBA season:</label>
       <select class="dropdown", name="season">
-        {% for  nba_season in nba_seasons %}
-          <option value="{{ nba_season }}">{{ nba_season }}</option>
-        {% endfor %}
+      {% for  nba_season in nba_seasons %}
+        <option value="{{ nba_season }}">{{ nba_season }}</option>
+      {% endfor %}
       </select>
       <button class="button" type="submit">Go</button>
-      </form>
+    </form>
   </div>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script src="static/js/season_select.js"></script>
 </body>
