@@ -4,62 +4,78 @@ import pickle
 import pandas as pd
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 from machine_learning.nn_regressor import predict, get_predicted_mvp
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, redirect, url_for
 from .utils import get_conn, query_db
 
 app = Flask(__name__)
-
 psql_config = {
 	"host": "localhost",
 	"database": "flask_db",
 	"user": os.getenv('DB_USERNAME'),
 	"password": os.getenv('DB_PASSWORD'),
 }
+global conn
+conn = get_conn(psql_config)
+years = query_db(conn,
+	"""
+	SELECT
+		MIN("Year") as first_year,
+		MAX("Year") as last_year
+	FROM all_stats
+	"""
+)
+first_year, last_year = years[0][0], years[0][1]
+years = range(first_year, (last_year + 1))
+nba_seasons = [f"{str(year - 1)}-{str(year)}" for year in years]
+year_season_map = dict(zip(nba_seasons, years))
+predictors = query_db(conn, "SELECT * FROM mvp_predictors")
+stats = query_db(conn, "SELECT * FROM all_stats")
+cols_res = query_db(conn,
+	"""
+	SELECT column_name FROM information_schema.columns
+	WHERE table_name = 'all_stats'
+	ORDER BY ordinal_position
+	"""
+)
+cols = [col[0] for col in cols_res]
+stats_df = pd.DataFrame(stats, columns=cols)
 
 @app.route('/', methods=["GET", "POST"])
-def home():
+def home(year_season_map=year_season_map, predictors=predictors, stats_df=stats_df, cols=cols):
 	"""
 	Render home page.
 	"""
-	conn = get_conn(psql_config)
-	predictors = query_db(conn, "SELECT * FROM mvp_predictors")
-	all_stats = query_db(conn, "SELECT * FROM all_stats")
-	cols = query_db(conn,
-		"""
-		SELECT column_name FROM information_schema.columns
-		WHERE table_name = 'all_stats'
-		ORDER BY ordinal_position
-		"""
-	)
-	col_names = [col[0] for col in cols]
-	print(col_names)
-	all_stats_df = pd.DataFrame(all_stats, columns=col_names
-	)
-	years = query_db(conn,
-		"""
-		SELECT
-			MIN("Year") as first_year,
-			MAX("Year") as last_year
-		FROM all_stats
-		"""
-	)
-	first_year, last_year = years[0][0], years[0][1]
-	years = range(first_year, (last_year + 1))
-	nba_seasons = [f"{str(year - 1)}-{str(year)}" for year in years]
-	year_season_map = dict(zip(nba_seasons, years))
 	if request.method == "POST":
 		with open("mvp_model.pkl", "rb") as file:
 			model = pickle.load(file)
 		preds = predict(model=model, data=predictors)
 		season = request.form["season"]
 		year = year_season_map[season]
-		mvp_results = get_predicted_mvp(data=all_stats_df, preds=preds, year=year)
-		return render_template("mvp/index.jinja", season=season, **mvp_results)
-	return render_template("home/index.jinja", nba_seasons=nba_seasons)
+		mvp_res = get_predicted_mvp(data=stats_df, preds=preds, year=year)
+		redirect(url_for("predict_mvp"))
+		return predict_mvp(mvp_res=mvp_res, year=year, season=season)
+	return render_template("home/index.html", nba_seasons=nba_seasons)
 
-@app.route('/predict/mvp', methods=["GET", "POST"])
-def predict_mvp(mvp: str):
-	return mvp
-
+@app.route('/prediction', methods=["GET", "POST"])
+def predict_mvp(mvp_res, year, season):
+	key_stats = ['"PTS"','"AST"','"TRB"','"3P"','"FT"','"TOV"','"BLK"','"STL"','"G"','"MP"']
+	# FIX ME: Handle escape characters in where clause
+	mvp_pred_res = query_db(conn, 
+		f"""
+		SELECT
+			{",".join(key_stats)}
+		FROM all_stats
+		WHERE "Player" = E'{mvp_res["mvp_pred"]}'
+		AND "Year" = {year}
+		"""
+	)
+	mvp_pred_sts = pd.DataFrame(mvp_pred_res, columns=[col.strip('"') for col in key_stats])
+	return render_template(
+		"mvp/index.html", 
+		season=season,
+		**mvp_res,
+		mvp_stats=mvp_pred_sts.to_html(classes="data_table", index=False)
+	)
+		
 if __name__ == "__main__":
 	app.run(host="0.0.0.0")

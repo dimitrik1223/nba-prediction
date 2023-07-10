@@ -159,7 +159,6 @@ def get_predicted_mvp(data, preds, year):
 			"mvp_actual": mvp_actual
 		}
 		return mvp_results
-
 	year_start = data["Year"].min()
 	year_end = data["Year"].max()
 	raise Exception(f"Year must fall within the range from {year_start} to {year_end}")

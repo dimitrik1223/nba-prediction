@@ -4,11 +4,12 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" type="text/css" href="static/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
   <title>Link CSS to HTML</title>
 </head>
 
 <body class="body">
-    <div class="page_div">
+    <div id="mvp_div">
       <h3> My {{ season }} NBA MVP prediction is {{ mvp_pred }}
         Do you believe my prediction is correct? </h3>
     </div>
@@ -16,5 +17,16 @@
       <button class="yes_button">Yes</button>
       <button class="no_button">No</button>
     </div>
-
+    <button id="show_stats" >Show Key Stats</button>
+    <script type="text/javascript">
+      $.when($.ready).then(function () {
+        // Document is ready
+        $("#show_stats").on("click", () => {
+          $("#stats_div").css("visibility", "visible");
+        });
+      });
+    </script>
+    <div id="stats_div">
+      {{ mvp_stats | safe }}
+    </div>
 </body>
