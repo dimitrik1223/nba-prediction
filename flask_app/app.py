@@ -60,12 +60,16 @@ def home(year_season_map=year_season_map, predictors=predictors, stats_df=stats_
 def predict_mvp(mvp_res, year, season):
 	key_stats = ['"PTS"','"AST"','"TRB"','"3P"','"FT"','"TOV"','"BLK"','"STL"','"G"','"MP"']
 	# FIX ME: Handle escape characters in where clause
+	mvp_pred = mvp_res["mvp_pred"]
+	if "'" in mvp_pred:
+		esc_char_ind = mvp_pred.index("'")
+		mvp_pred = mvp_pred[:esc_char_ind] + "\\" + mvp_pred[esc_char_ind:]
 	mvp_pred_res = query_db(conn, 
 		f"""
 		SELECT
 			{",".join(key_stats)}
 		FROM all_stats
-		WHERE "Player" = E'{mvp_res["mvp_pred"]}'
+		WHERE "Player" = E'{mvp_pred}'
 		AND "Year" = {year}
 		"""
 	)
@@ -76,6 +80,6 @@ def predict_mvp(mvp_res, year, season):
 		**mvp_res,
 		mvp_stats=mvp_pred_sts.to_html(classes="data_table", index=False)
 	)
-		
+
 if __name__ == "__main__":
 	app.run(host="0.0.0.0")
