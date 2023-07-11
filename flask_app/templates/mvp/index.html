@@ -10,7 +10,7 @@
 
 <body class="body">
     <div id="mvp_div">
-      <h3> My {{ season }} NBA MVP prediction is {{ mvp_pred }}
+      <h3> My {{ season }} NBA MVP prediction is {{ mvp_pred }}.
         Do you believe my prediction is correct? </h3>
     </div>
     <div class="button_div">
@@ -21,8 +21,16 @@
     <script type="text/javascript">
       $.when($.ready).then(function () {
         // Document is ready
+        let visible = false;
+
         $("#show_stats").on("click", () => {
-          $("#stats_div").css("visibility", "visible");
+        if (!visible) {
+            $("#stats_div").css("visibility", "visible");
+        } else {
+            $("#stats_div").css("visibility", "hidden");
+        }
+        // Toggle boolean value
+        visible = !visible
         });
       });
     </script>
