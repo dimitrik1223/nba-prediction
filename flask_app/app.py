@@ -40,26 +40,31 @@ cols_res = query_db(conn,
 cols = [col[0] for col in cols_res]
 stats_df = pd.DataFrame(stats, columns=cols)
 
-@app.route('/', methods=["GET", "POST"])
-def home(year_season_map=year_season_map, predictors=predictors, stats_df=stats_df, cols=cols):
+@app.route('/index/', methods=["GET", "POST"])
+def index():
 	"""
 	Render home page.
 	"""
-	if request.method == "POST":
+	if request.method == "POST" and request.path == "/index/":
+		print("Running")
+		season = request.form["season"]
+		return redirect(url_for("predict_mvp", season=season))
+	return render_template("index/index.html", nba_seasons=nba_seasons)
+
+def get_data(season, year_season_map=year_season_map, predictors=predictors, stats_df=stats_df, data_retrieved=False):
+	while data_retrieved == False:
 		with open("mvp_model.pkl", "rb") as file:
 			model = pickle.load(file)
 		preds = predict(model=model, data=predictors)
-		season = request.form["season"]
 		year = year_season_map[season]
 		mvp_res = get_predicted_mvp(data=stats_df, preds=preds, year=year)
-		redirect(url_for("predict_mvp"))
-		return predict_mvp(mvp_res=mvp_res, year=year, season=season)
-	return render_template("home/index.html", nba_seasons=nba_seasons)
+		data_retrieved = True
+	return year, mvp_res
 
-@app.route('/prediction', methods=["GET", "POST"])
-def predict_mvp(mvp_res, year, season):
+@app.route('/index/prediction/<season>', methods=["GET", "POST"])
+def predict_mvp(season):
+	year, mvp_res = get_data(season)
 	key_stats = ['"PTS"','"AST"','"TRB"','"3P"','"FT"','"TOV"','"BLK"','"STL"','"G"','"MP"']
-	# FIX ME: Handle escape characters in where clause
 	mvp_pred = mvp_res["mvp_pred"]
 	if "'" in mvp_pred:
 		esc_char_ind = mvp_pred.index("'")
@@ -74,12 +79,14 @@ def predict_mvp(mvp_res, year, season):
 		"""
 	)
 	mvp_pred_sts = pd.DataFrame(mvp_pred_res, columns=[col.strip('"') for col in key_stats])
+	if request.method == "POST":
+		return "WIP"
 	return render_template(
 		"mvp/index.html", 
 		season=season,
 		**mvp_res,
 		mvp_stats=mvp_pred_sts.to_html(classes="data_table", index=False)
-	)
+	)	
 
 if __name__ == "__main__":
 	app.run(host="0.0.0.0")
