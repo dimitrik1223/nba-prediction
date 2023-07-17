@@ -14,9 +14,10 @@ h1 {
 
 h3 {
 	font-family: "Helvetica Neue";
-	font-size: 13px;
+	font-size: 20px;
 	color: black;
 	text-align: center;
+	margin-bottom: 45px;
 }
 
 #season_div {
@@ -81,7 +82,6 @@ h3 {
 }
 
 .agreement_from {
-	margin-top: 10px;
 	display: flex;
 	justify-content: center;
 	align-items: center;
@@ -98,9 +98,10 @@ h3 {
 }
 
 .yes_button{
-	display: flex;
-	margin-left: 20px;
 	margin-right: 20px;
+	height: 40px;
+	width: 80px;
+	text-align: center;
 	background-color: #337ab7;
 	color: #fff;
 	border: none;
@@ -109,9 +110,10 @@ h3 {
 }
 
 .no_button{
-	display: flex;
 	margin-left: 20px;
-	margin-right: 20px;
+	height: 40px;
+	width: 80px;
+	text-align: center;
 	background-color: red;
 	color: #fff;
 	border: none;
@@ -129,30 +131,30 @@ h3 {
 
 
 #show_stats {
-  background-color: #e1ecf4;
-  border-radius: 3px;
-  border: 1px solid #7aa7c7;
-  box-shadow: rgba(255, 255, 255, .7) 0 1px 0 0 inset;
-  box-sizing: border-box;
-  color: #39739d;
-  cursor: pointer;
-  display: inline-block;
-  font-family: -apple-system,system-ui,"Segoe UI","Liberation Sans",sans-serif;
-  font-size: 13px;
-  font-weight: 400;
-  line-height: 1.15385;
-  margin: 0;
-  margin-top: 20px;
-  outline: none;
-  padding: 8px .8em;
-  position: relative;
-  text-align: center;
-  text-decoration: none;
-  user-select: none;
-  -webkit-user-select: none;
-  touch-action: manipulation;
-  vertical-align: baseline;
-  white-space: nowrap;
+	background-color: #e1ecf4;
+	border-radius: 3px;
+	border: 1px solid #7aa7c7;
+	box-shadow: rgba(255, 255, 255, .7) 0 1px 0 0 inset;
+	box-sizing: border-box;
+	color: #39739d;
+	cursor: pointer;
+	display: inline-block;
+	font-family: -apple-system,system-ui,"Segoe UI","Liberation Sans",sans-serif;
+	font-size: 18px;
+	font-weight: 400;
+	line-height: 1.15385;
+	margin: 0;
+	margin-top: 45px;
+	outline: none;
+	padding: 8px .8em;
+	position: relative;
+	text-align: center;
+	text-decoration: none;
+	user-select: none;
+	-webkit-user-select: none;
+	touch-action: manipulation;
+	vertical-align: baseline;
+	white-space: nowrap;
 }
 
 #show_stats:hover,
@@ -169,4 +171,112 @@ h3 {
   background-color: #a0c7e4;
   box-shadow: none;
   color: #2c5777;
+}
+
+.table-wrapper{
+    margin: 10px 70px 70px;
+    box-shadow: 0px 35px 50px rgba( 0, 0, 0, 0.2 );
+}
+
+.data_table {
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: normal;
+    border: none;
+    border-collapse: collapse;
+    width: 50%;
+    max-width: 100%;
+    white-space: nowrap;
+    background-color: white;
+}
+
+.data_table td, .data_table th {
+    text-align: center;
+    padding: 8px;
+}
+
+.data_table td {
+    border-right: 1px solid #f8f8f8;
+    font-size: 12px;
+}
+
+.data_table thead th {
+    color: #ffffff;
+    background: #4FC3A1;
+}
+
+
+.data_table thead th:nth-child(odd) {
+    color: #ffffff;
+    background: #324960;
+}
+
+.data_table tr:nth-child(even) {
+    background: #F8F8F8;
+}
+
+/* Responsive */
+
+@media (max-width: 767px) {
+    .data_table {
+        display: block;
+        width: 100%;
+    }
+    .table-wrapper:before{
+        content: "Scroll horizontally >";
+        display: block;
+        text-align: right;
+        font-size: 11px;
+        color: white;
+        padding: 0 0 10px;
+    }
+    .data_table thead, .data_table tbody, .data_table thead th {
+        display: block;
+    }
+    .data_table thead th:last-child{
+        border-bottom: none;
+    }
+    .data_table thead {
+        float: left;
+    }
+    .data_table tbody {
+        width: auto;
+        position: relative;
+        overflow-x: auto;
+    }
+    .data_table td, .data_table th {
+        padding: 20px .625em .625em .625em;
+        height: 60px;
+        vertical-align: middle;
+        box-sizing: border-box;
+        overflow-x: hidden;
+        overflow-y: auto;
+        width: 120px;
+        font-size: 13px;
+        text-overflow: ellipsis;
+    }
+    .data_table thead th {
+        text-align: left;
+        border-bottom: 1px solid #f7f7f9;
+    }
+    .data_table tbody tr {
+        display: table-cell;
+    }
+    .data_table tbody tr:nth-child(odd) {
+        background: none;
+    }
+    .data_table tr:nth-child(even) {
+        background: transparent;
+    }
+    .data_table tr td:nth-child(odd) {
+        background: #F8F8F8;
+        border-right: 1px solid #E6E4E4;
+    }
+    .data_table tr td:nth-child(even) {
+        border-right: 1px solid #E6E4E4;
+    }
+    .data_table tbody td {
+        display: block;
+        text-align: center;
+    }
 }

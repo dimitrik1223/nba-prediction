@@ -13,10 +13,11 @@
       <h3> My {{ season }} NBA MVP prediction is {{ mvp_pred }}.
         Do you believe my prediction is correct? </h3>
     </div>
-    <form class="agreement_form", action="{{ url_for('predict_mvp', season=season) }}" method="POST">
-      <input type="submit" value="YUH" class="yes_button" name="Yes"></input>
-      <input type="submit" value="NAH" class="no_button" name="No"></input>
-    </form>
+      <form id="agreement_form", action="{{ url_for('predict_mvp', season=season) }}" method="POST">
+        <input type="submit" value="YUH" class="yes_button" name="Yes"></input>
+        <input type="submit" value="NAH" class="no_button" name="No"></input>
+      </form>
+   
     <button id="show_stats" >Show Key Stats</button>
     <script type="text/javascript">
       $.when($.ready).then(function () {

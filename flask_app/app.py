@@ -46,7 +46,6 @@ def index():
 	Render home page.
 	"""
 	if request.method == "POST" and request.path == "/index/":
-		print("Running")
 		season = request.form["season"]
 		return redirect(url_for("predict_mvp", season=season))
 	return render_template("index/index.html", nba_seasons=nba_seasons)
@@ -66,6 +65,7 @@ def predict_mvp(season):
 	year, mvp_res = get_data(season)
 	key_stats = ['"PTS"','"AST"','"TRB"','"3P"','"FT"','"TOV"','"BLK"','"STL"','"G"','"MP"']
 	mvp_pred = mvp_res["mvp_pred"]
+	mvp_actual = mvp_res["mvp_actual"]
 	if "'" in mvp_pred:
 		esc_char_ind = mvp_pred.index("'")
 		mvp_pred = mvp_pred[:esc_char_ind] + "\\" + mvp_pred[esc_char_ind:]
@@ -80,7 +80,16 @@ def predict_mvp(season):
 	)
 	mvp_pred_sts = pd.DataFrame(mvp_pred_res, columns=[col.strip('"') for col in key_stats])
 	if request.method == "POST":
-		return "WIP"
+		if request.form.get("Yes"):
+			if mvp_pred == mvp_actual:
+				return "Correct"
+			else:
+				return f"Wrong! It was actually {mvp_actual}"
+		else:
+			if mvp_pred != mvp_actual:
+				return f"Nice catch, it was actually {mvp_actual}"
+			else: 
+				return "Wrong!"
 	return render_template(
 		"mvp/index.html", 
 		season=season,
