@@ -1,0 +1,27 @@
+<!doctype html>
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" type="text/css" href="../../static/style.css" />
+  <title>Correct Answer</title>
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles-confetti@2.11.0/tsparticles.confetti.bundle.min.js"></script>
+</head>
+
+<body> 
+	<h2 id="correct_res">{{ correct_res }}</h2>
+	<script>
+		function randomInRange(min, max) {
+  			return Math.random() * (max - min) + min;
+		}
+		// Confetti explosion 
+		for (let i = 0; i < 500; i++) {
+			confetti({
+  				angle: randomInRange(55, 125),
+  				spread: randomInRange(50, 70),
+  				particleCount: randomInRange(10, 50),
+  				origin: { y: 0.6 },
+			});
+		};
+	  </script>
+</body>

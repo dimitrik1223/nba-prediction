@@ -82,14 +82,18 @@ def predict_mvp(season):
 	if request.method == "POST":
 		if request.form.get("Yes"):
 			if mvp_pred == mvp_actual:
-				return "Correct"
+				correct_res = f"You're correct. The {season} NBA MVP was indeed {mvp_actual}"
+				return render_template("mvp/correct_choice.html", correct_res=correct_res)
 			else:
-				return f"Wrong! It was actually {mvp_actual}"
+				incorrect_res = f"Nope, the MVP was actually {mvp_actual}!"
+				return render_template("mvp/incorrect_choice.html", incorrect_res=incorrect_res)
 		else:
 			if mvp_pred != mvp_actual:
-				return f"Nice catch, it was actually {mvp_actual}"
-			else: 
-				return "Wrong!"
+				correct_res = f"Nice catch, it was actually {mvp_actual}"
+				return render_template("mvp/correct_choice.html", correct_res=correct_res)
+			else:
+				incorrect_res = f"Nope, the MVP was actually {mvp_actual}!"
+				return render_template("mvp/incorrect_choice.html", incorrect_res=incorrect_res)
 	return render_template(
 		"mvp/index.html", 
 		season=season,
