@@ -20,6 +20,22 @@ h3 {
 	margin-bottom: 45px;
 }
 
+#correct_res {
+	margin-top: 300px;
+	font-family: "Helvetica Neue";
+	font-size: 20px;
+	color: green;
+}
+
+#incorrect_res {
+	margin-left: 35%;
+	margin-top: 300px;
+	display: flex;
+	font-family: "Helvetica Neue";
+	font-size: 20px;
+	color: red;
+}
+
 #season_div {
 	background-color: #17408B;
 	margin: auto;
@@ -36,6 +52,14 @@ h3 {
 }
 
 #mvp_trophy {
+	height: 200px
+}
+
+#pred_img {
+	height: 200px
+}
+
+#actual_img {
 	height: 200px
 }
 

@@ -79,26 +79,31 @@ def predict_mvp(season):
 		"""
 	)
 	mvp_pred_sts = pd.DataFrame(mvp_pred_res, columns=[col.strip('"') for col in key_stats])
+	pred_img_url = "mvp_imgs/" + mvp_pred.lower().replace(" ", "_") + ".jpg"
+	actual_img_url = "mvp_imgs/" + mvp_actual.lower().replace("-", " ").replace(" ", "_") + ".jpg"
+	print(actual_img_url)
 	if request.method == "POST":
 		if request.form.get("Yes"):
 			if mvp_pred == mvp_actual:
 				correct_res = f"You're correct. The {season} NBA MVP was indeed {mvp_actual}"
-				return render_template("mvp/correct_choice.html", correct_res=correct_res)
+				return render_template("mvp/correct_choice.html", correct_res=correct_res, actual_img_url=actual_img_url)
 			else:
 				incorrect_res = f"Nope, the MVP was actually {mvp_actual}!"
-				return render_template("mvp/incorrect_choice.html", incorrect_res=incorrect_res)
+				return render_template("mvp/incorrect_choice.html", incorrect_res=incorrect_res, actual_img_url=actual_img_url)
 		else:
 			if mvp_pred != mvp_actual:
 				correct_res = f"Nice catch, it was actually {mvp_actual}"
-				return render_template("mvp/correct_choice.html", correct_res=correct_res)
+				return render_template("mvp/correct_choice.html", correct_res=correct_res, actual_img_url=actual_img_url)
 			else:
 				incorrect_res = f"Nope, the MVP was actually {mvp_actual}!"
-				return render_template("mvp/incorrect_choice.html", incorrect_res=incorrect_res)
+				return render_template("mvp/incorrect_choice.html", incorrect_res=incorrect_res, actual_img_url=actual_img_url)
 	return render_template(
 		"mvp/index.html", 
 		season=season,
 		**mvp_res,
-		mvp_stats=mvp_pred_sts.to_html(classes="data_table", index=False)
+		mvp_stats=mvp_pred_sts.to_html(classes="data_table", index=False),
+		pred_img_url=pred_img_url,
+		actual_img_url=actual_img_url
 	)	
 
 if __name__ == "__main__":
