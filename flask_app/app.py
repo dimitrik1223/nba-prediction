@@ -81,7 +81,6 @@ def predict_mvp(season):
 	mvp_pred_sts = pd.DataFrame(mvp_pred_res, columns=[col.strip('"') for col in key_stats])
 	pred_img_url = "mvp_imgs/" + mvp_pred.lower().replace(" ", "_") + ".jpg"
 	actual_img_url = "mvp_imgs/" + mvp_actual.lower().replace("-", " ").replace(" ", "_") + ".jpg"
-	print(actual_img_url)
 	if request.method == "POST":
 		if request.form.get("Yes"):
 			if mvp_pred == mvp_actual:
@@ -92,8 +91,20 @@ def predict_mvp(season):
 				return render_template("mvp/incorrect_choice.html", incorrect_res=incorrect_res, actual_img_url=actual_img_url)
 		else:
 			if mvp_pred != mvp_actual:
+				sec_res = True
+				if mvp_actual == request.form["corr_res"]:
+					corr_res_val = True
+				else:
+					corr_res_val = False
+				print(corr_res_val)
 				correct_res = f"Nice catch, it was actually {mvp_actual}"
-				return render_template("mvp/correct_choice.html", correct_res=correct_res, actual_img_url=actual_img_url)
+				return render_template("mvp/correct_choice.html", 
+					sec_res=sec_res,
+					season=season,
+					correct_res=correct_res,
+					actual_img_url=actual_img_url,
+					corr_res_val=corr_res_val
+				)
 			else:
 				incorrect_res = f"Nope, the MVP was actually {mvp_actual}!"
 				return render_template("mvp/incorrect_choice.html", incorrect_res=incorrect_res, actual_img_url=actual_img_url)
