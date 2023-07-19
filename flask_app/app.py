@@ -84,29 +84,43 @@ def predict_mvp(season):
 	if request.method == "POST":
 		if request.form.get("Yes"):
 			if mvp_pred == mvp_actual:
-				correct_res = f"You're correct. The {season} NBA MVP was indeed {mvp_actual}"
-				return render_template("mvp/correct_choice.html", correct_res=correct_res, actual_img_url=actual_img_url)
+				return render_template(
+					"mvp/correct_choice.html",
+					season=season,
+					mvp_actual=mvp_actual,
+					actual_img_url=actual_img_url
+				)
 			else:
-				incorrect_res = f"Nope, the MVP was actually {mvp_actual}!"
-				return render_template("mvp/incorrect_choice.html", incorrect_res=incorrect_res, actual_img_url=actual_img_url)
+				return render_template(
+					"mvp/incorrect_choice.html",
+					season=season,
+					mvp_actual=mvp_actual,
+					actual_img_url=actual_img_url
+				)
 		else:
 			if mvp_pred != mvp_actual:
 				sec_res = True
-				corr_res_val = False
+				corr_res_val = None
 				if request.form.get("corr_res"):
 					if mvp_actual == request.form["corr_res"]:
 						corr_res_val = True
-				correct_res = f"Nice catch, it was actually {mvp_actual}"
-				return render_template("mvp/correct_choice.html", 
+					else:
+						corr_res_val = False
+				return render_template(
+					"mvp/correct_choice.html", 
 					sec_res=sec_res,
 					season=season,
-					correct_res=correct_res,
+					mvp_actual=mvp_actual,
 					actual_img_url=actual_img_url,
 					corr_res_val=corr_res_val
 				)
 			else:
-				incorrect_res = f"Nope, the MVP was actually {mvp_actual}!"
-				return render_template("mvp/incorrect_choice.html", incorrect_res=incorrect_res, actual_img_url=actual_img_url)
+				return render_template(
+					"mvp/incorrect_choice.html",
+					season=season,
+					mvp_actual=mvp_actual,
+					actual_img_url=actual_img_url
+				)
 	return render_template(
 		"mvp/index.html", 
 		season=season,

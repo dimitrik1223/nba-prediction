@@ -10,23 +10,24 @@
 </head>
 
 <body> 
-	
-	{% if sec_res %} 
+	<!-- Show form only if user caught wrong prediction -->
+	{% if sec_res %}
 		<form id="correction_form", method="POST">
 			<h2>Who was the {{ season }} NBA MVP?</h2>
 			<input type="text" id="corr_res" name="corr_res">
 			<button id="corr_sub_button", type="submit">Submit</button>
 		</form>
-		<script type="text/javascript">
+		<!-- <script type="text/javascript">
 			$.when($.ready).then(function (){
-				$("#corr_sub_button").on("submit", () => {
+				$("#correction_form").on("submit", () => {
+					event.preventDefault();
 					$("#correction_form").css("visibility", "hidden");
 				});
 			});
-		</script>
-	{% endif %}
-	{% if corr_res_val or not sec_res %}
-		<h2 id="correct_res">{{ correct_res }}</h2>
+		</script> -->
+	{% else %}
+		<h2 id="correct_res">You're correct. The {{ season }} 
+			NBA MVP was indeed {{ mvp_actual }} </h2>
 		<img id="actual_img", src="{{ url_for('static', filename=actual_img_url) }}"></img>
 		<script>
 			function randomInRange(min, max) {
@@ -42,5 +43,29 @@
 				});
 			};
 		</script>
+	<!-- If second response and second response is correct -->
+	{% endif %}
+	{% if sec_res and corr_res_val %}
+		<h2 id="correct_res">Nice catch, it was actually {{ mvp_actual }}</h2>
+		<img id="actual_img", src="{{ url_for('static', filename=actual_img_url) }}"></img>
+		<script>
+			function randomInRange(min, max) {
+				return Math.random() * (max - min) + min;
+			}
+			// Confetti explosion 
+			for (let i = 0; i < 500; i++) {
+				confetti({
+					angle: randomInRange(55, 125),
+					spread: randomInRange(50, 70),
+					particleCount: randomInRange(10, 50),
+					origin: { y: 0.6 },
+				});
+			};
+		</script>
+	<!-- If second response and second response is incorrect -->
+	{% elif sec_res and corr_res_val is not none and not corr_res_val  %}
+		<h2 id="incorrect_res">Nope, nice try!
+			 The {{ season }} MVP was actually {{ mvp_actual }} </h2>
+		<img id="actual_img", src="{{ url_for('static', filename=actual_img_url) }}"></img>
 	{% endif %}
 </body>
