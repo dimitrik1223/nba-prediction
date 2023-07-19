@@ -92,11 +92,10 @@ def predict_mvp(season):
 		else:
 			if mvp_pred != mvp_actual:
 				sec_res = True
-				if mvp_actual == request.form["corr_res"]:
-					corr_res_val = True
-				else:
-					corr_res_val = False
-				print(corr_res_val)
+				corr_res_val = False
+				if request.form.get("corr_res"):
+					if mvp_actual == request.form["corr_res"]:
+						corr_res_val = True
 				correct_res = f"Nice catch, it was actually {mvp_actual}"
 				return render_template("mvp/correct_choice.html", 
 					sec_res=sec_res,
