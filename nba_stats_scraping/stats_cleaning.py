@@ -80,5 +80,6 @@ def create_stats_basetable(mvp_stats, player_stats, team_stats):
 	stats = stats.fillna(0)
 	for col in stats.columns:
 		stats[col] = pd.to_numeric(stats[col], errors="ignore")
+	stats["id"] = stats.index + 1
 
 	return stats

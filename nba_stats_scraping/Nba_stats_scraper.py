@@ -27,7 +27,7 @@ class Nba_stats_scraper:
 			return response
 		except requests.exceptions.RequestException as e:
 			print(f"Network request error: {e}")
-		return response
+			return None
 
 	def retry_request(self, url, max_retries=3):
 		"""
