@@ -14,7 +14,12 @@
 	{% if sec_res %}
 		<form id="correction_form", method="POST">
 			<h2>Who was the {{ season }} NBA MVP?</h2>
-			<input type="text" id="corr_res" name="corr_res">
+			<input type="text" id="corr_res" name="corr_res", list="mvp_options">
+			<datalist id="mvp_options">
+				{% for mvp in all_mvps %}
+					<option value="{{ mvp }}"></option>
+				{% endfor %}
+			</datalist>
 			<button id="corr_sub_button", type="submit">Submit</button>
 		</form>
 		<!-- <script type="text/javascript">
