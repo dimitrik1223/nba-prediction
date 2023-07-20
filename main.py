@@ -1,5 +1,4 @@
 import os
-import pickle
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 #pylint: disable=wrong-import-position
 from nba_stats_scraping.nba_stats_scraper import Nba_stats_scraper
@@ -24,7 +23,7 @@ def main(postgres_config, year_start=2023, year_end=2024) -> None:
 	load_db(dfs=all_stats, table_names="all_stats", postgres_config=postgres_config)
 	predictors = get_predictors(all_stats)
 	load_db(dfs=predictors, table_names="mvp_predictors", postgres_config=postgres_config)
-
+	train_model(all_stats)
 if __name__ == "__main__":
 	config = {
 		"username": os.getenv("POSTGRES_USERNAME"),
