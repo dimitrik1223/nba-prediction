@@ -1,6 +1,7 @@
 import os
 import time
 import requests
+from pathlib import Path
 import pandas as pd
 
 from bs4 import BeautifulSoup
@@ -44,17 +45,24 @@ class Nba_stats_scraper:
 			else:
 				return response
 
-	def file_writer(self, dir_name, year, response):
+	def file_writer(self, dir_name, year, response, target_directory=None):
 		"""
 		Write HTML files to directory
 		"""
-		cwd = os.getcwd()
-		if not os.path.isdir(f"{cwd}/{dir_name}/"):
-				os.mkdir(f"{dir_name}/")
-		with open(f"{dir_name}/{year}.html", "w+") as file:
-				file.write(response.text)
-		with open(f"{dir_name}/{year}.html") as file:
-				page = file.read()
+		if target_directory is None:
+			target_directory = Path.cwd()/"desktop"/"nba_mvp_predictor"
+		else:
+			target_directory = Path(target_directory)
+		
+		target_directory = target_directory / dir_name
+		target_directory.mkdir(parents=True, exist_ok=True)
+
+		file_path = target_directory / f"{year}.html"
+		with open(file_path, "w+") as file:
+			file.write(response.text)		
+		# Read and return the content of the file
+		with open(file_path) as file:
+			page = file.read()
 
 		return page
 
