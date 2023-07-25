@@ -1,10 +1,13 @@
 import os
 import time
 import requests
-from pathlib import Path
 import pandas as pd
+import logging
 
+
+from pathlib import Path
 from bs4 import BeautifulSoup
+from playwright.async_api import async_playwright, TimeoutError
 
 class Nba_stats_scraper:
 	"""
@@ -65,6 +68,28 @@ class Nba_stats_scraper:
 			page = file.read()
 
 		return page
+
+	async def grab_url_html(url, selector, sleep=5, retries=3):
+		html = None
+		# Exponential backoff
+		for i in range(1, retries+1):
+			time.sleep(sleep * i)
+
+			try:
+				async with async_playwright() as play:
+					browser = await play.chromium.launch()
+					page = await browser.new_page()
+					await page.goto(url)
+					logging.info("URL for %s", await page.title())
+					html = await page.inner_hmtl(selector)
+			except TimeoutError:
+				logging.error("Timeout error on %s", url)
+				continue
+			else:
+				break
+		
+		return html
+			
 
 	def scrape_mvp_stats(self):
 		"""
