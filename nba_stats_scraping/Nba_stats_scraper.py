@@ -3,7 +3,7 @@ import time
 import requests
 import pandas as pd
 import logging
-
+import asyncio
 
 from pathlib import Path
 from bs4 import BeautifulSoup
@@ -69,11 +69,20 @@ class Nba_stats_scraper:
 
 		return page
 
-	async def grab_url_html(url, selector, sleep=5, retries=3):
+	async def grab_url_html(url, selector, sleep=100, retries=3):
+		"""
+		Uses Playwright Chromium browser to open URL and grab inner HMTL asynchronously. 
+		"""
 		html = None
 		# Exponential backoff
 		for i in range(1, retries+1):
-			time.sleep(sleep * i)
+			if i == 1:
+				sleep_dur = 10
+				time.sleep(sleep_dur)
+			else:
+				sleep_dur = sleep ** i
+				time.sleep(sleep_dur)
+			print(f"ZzZ... slept for {sleep_dur} seconds")
 
 			try:
 				async with async_playwright() as play:
