@@ -4,10 +4,10 @@ import requests
 import pandas as pd
 import logging
 import asyncio
+import aiohttp
 
 from pathlib import Path
 from bs4 import BeautifulSoup
-from playwright.async_api import async_playwright, TimeoutError
 
 class Nba_stats_scraper:
 	"""
@@ -69,36 +69,44 @@ class Nba_stats_scraper:
 
 		return page
 
-	async def grab_url_html(url, selector, sleep=100, retries=3):
+	async def grab_url_html(session, url, selector):
 		"""
-		Uses Playwright Chromium browser to open URL and grab inner HMTL asynchronously. 
+		Async coroutine function for parsing HTML element from
+		given url. Designed to be used with aiohttp a async
+		HTTP client.
 		"""
-		html = None
-		# Exponential backoff
-		for i in range(1, retries+1):
-			if i == 1:
-				sleep_dur = 10
-				time.sleep(sleep_dur)
-			else:
-				sleep_dur = sleep ** i
-				time.sleep(sleep_dur)
-			print(f"ZzZ... slept for {sleep_dur} seconds")
+		async with session.get(url) as response:
+			html = await response.text()
+			soup = BeautifulSoup(html, "parser.html")
+			return soup.select(selector)
 
-			try:
-				async with async_playwright() as play:
-					browser = await play.chromium.launch()
-					page = await browser.new_page()
-					await page.goto(url)
-					logging.info("URL for %s", await page.title())
-					html = await page.inner_hmtl(selector)
-			except TimeoutError:
-				logging.error("Timeout error on %s", url)
-				continue
-			else:
-				break
-		
-		return html
-			
+	async def scrape_schedule_urls(session, year):
+		# Fetch filter elements containing URLs to game schedules per month
+		url = f"https://www.basketball-reference.com/leagues/NBA_{year}_games.html"
+
+		return await grab_url_html(session, url, "#content .filter a")
+
+	async def scrape_box_scores(year_start, year_end):
+		box_score_urls = []
+		async with aiohttp.ClientSession() as session:
+			tasks = []
+			for year in range(year_start, year_end + 1):
+				tasks.append(scrape_schedule_urls(session, year))
+
+			# Fetch monthly URLs concurrently
+			month_urls_list = await asyncio.gather(*tasks)
+
+			for month_url in month_urls_list:
+				for a in month_url:
+					url = "https://www.basketball-reference.com" + a["href"]
+					schedule_table = await grab_url_html(session, url, "#schedule a")
+
+					for a in schedule_table:
+						url = a["href"]
+						if url.startswith("/boxscores/") and url.endswith(".html"):
+							box_score_urls.append("https://www.basketball-reference.com" + url)
+
+		return box_score_urls		
 
 	def scrape_mvp_stats(self):
 		"""
