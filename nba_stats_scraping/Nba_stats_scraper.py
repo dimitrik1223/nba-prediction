@@ -48,7 +48,7 @@ class Nba_stats_scraper:
 			else:
 				return response
 
-	def file_writer(self, dir_name, year, response, target_directory=None, parsed=False):
+	def file_writer(self, dir_name, file_name, response, target_directory=None, parsed=False):
 		"""
 		Write HTML files to directory
 		"""
@@ -60,7 +60,7 @@ class Nba_stats_scraper:
 		target_directory = target_directory / dir_name
 		target_directory.mkdir(parents=True, exist_ok=True)
 
-		file_path = target_directory / f"{year}.html"
+		file_path = target_directory / f"{file_name}.html"
 		with open(file_path, "w+") as file:
 			if parsed:
 				file.write(str(response))
@@ -105,7 +105,7 @@ class Nba_stats_scraper:
 					month_year = f"{month}_{year}"
 					url = f"https://www.basketball-reference.com{a['href']}" 
 					schedule_table = await self.grab_url_html(session, url, "#all_schedule")
-					self.file_writer("season_schedules", month_year, schedule_table)
+					self.file_writer("season_schedules", month_year, schedule_table, parsed=True)
 				logging.info("Done scraping season schedules")
 			
 			return box_score_urls
