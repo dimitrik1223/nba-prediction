@@ -72,16 +72,30 @@ class Nba_stats_scraper:
 
 		return page
 
-	async def grab_url_html(self, session, url, selector):
+	async def grab_url_html(self, session, url, selector, sleep=5, retries=3):
 		"""
 		Async coroutine function for parsing HTML element from
 		given url. Designed to be used with aiohttp a async
 		HTTP client.
 		"""
-		async with session.get(url) as response:
-			html = await response.text()
-			soup = BeautifulSoup(html, "html.parser")
-			return soup.select(selector)
+		for i in range(1, retries + 1):
+			if i == 1:
+				sleep_dur = 25
+				# Exponential backoff
+			else:
+				sleep_dur = sleep ** i
+			time.sleep(sleep_dur)
+			print(f"ZzZ... slept for {sleep_dur} seconds")
+			try:
+				async with session.get(url) as response:
+					html = await response.text()
+					soup = BeautifulSoup(html, "html.parser")
+					parsed_html =  soup.select(selector)
+					return parsed_html
+			except:
+				# Replace with error behaviour
+				print("HTTP Error")
+				continue
 
 	async def scrape_schedule_urls(self, session, year):
 		# Fetch filter elements containing URLs to game schedules per month
