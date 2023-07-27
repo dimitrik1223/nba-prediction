@@ -48,7 +48,7 @@ class Nba_stats_scraper:
 			else:
 				return response
 
-	def file_writer(self, dir_name, year, response, target_directory=None):
+	def file_writer(self, dir_name, year, response, target_directory=None, parsed=False):
 		"""
 		Write HTML files to directory
 		"""
@@ -62,14 +62,17 @@ class Nba_stats_scraper:
 
 		file_path = target_directory / f"{year}.html"
 		with open(file_path, "w+") as file:
-			file.write(response.text)		
+			if parsed:
+				file.write(str(response))
+			else:		
+				file.write(response.text)		
 		# Read and return the content of the file
 		with open(file_path) as file:
 			page = file.read()
 
 		return page
 
-	async def grab_url_html(session, url, selector):
+	async def grab_url_html(self, session, url, selector):
 		"""
 		Async coroutine function for parsing HTML element from
 		given url. Designed to be used with aiohttp a async
@@ -77,21 +80,42 @@ class Nba_stats_scraper:
 		"""
 		async with session.get(url) as response:
 			html = await response.text()
-			soup = BeautifulSoup(html, "parser.html")
+			soup = BeautifulSoup(html, "html.parser")
 			return soup.select(selector)
 
-	async def scrape_schedule_urls(session, year):
+	async def scrape_schedule_urls(self, session, year):
 		# Fetch filter elements containing URLs to game schedules per month
 		url = f"https://www.basketball-reference.com/leagues/NBA_{year}_games.html"
 
-		return await grab_url_html(session, url, "#content .filter a")
+		return await self.grab_url_html(session, url, "#content .filter a")
 
-	async def scrape_box_scores(year_start, year_end):
+	async def scrape_schedules(self):
+		box_score_urls = []
+		async with aiohttp.ClientSession() as session:
+			tasks = []
+			for year in range(self.year_start, self.year_end + 1):
+				tasks.append(self.scrape_schedule_urls(session, year))
+
+			# Fetch monthly schedule URLs concurrently
+			month_urls_list = await asyncio.gather(*tasks)
+			for month_url in month_urls_list:
+				for a in month_url:
+					month = a["href"].split('_')[2].split('_')[1].split('.')[0]
+					year = a["href"].split('.')[1]
+					month_year = f"{month}_{year}"
+					url = f"https://www.basketball-reference.com{a['href']}" 
+					schedule_table = await self.grab_url_html(session, url, "#all_schedule")
+					self.file_writer("season_schedules", month_year, schedule_table)
+				logging.info("Done scraping season schedules")
+			
+			return box_score_urls
+
+	async def scrape_box_scores(self, year_start, year_end):
 		box_score_urls = []
 		async with aiohttp.ClientSession() as session:
 			tasks = []
 			for year in range(year_start, year_end + 1):
-				tasks.append(scrape_schedule_urls(session, year))
+				tasks.append(self.scrape_schedule_urls(session, year))
 
 			# Fetch monthly URLs concurrently
 			month_urls_list = await asyncio.gather(*tasks)
