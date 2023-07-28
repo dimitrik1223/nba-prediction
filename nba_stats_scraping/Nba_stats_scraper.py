@@ -79,11 +79,8 @@ class Nba_stats_scraper:
 		HTTP client.
 		"""
 		for i in range(1, retries + 1):
-			if i == 1:
-				sleep_dur = 25
-				# Exponential backoff
-			else:
-				sleep_dur = sleep ** i
+			# Exponential backoff
+			sleep_dur = sleep ** i
 			time.sleep(sleep_dur)
 			print(f"ZzZ... slept for {sleep_dur} seconds")
 			try:
@@ -113,38 +110,46 @@ class Nba_stats_scraper:
 			# Fetch monthly schedule URLs concurrently
 			month_urls_list = await asyncio.gather(*tasks)
 			for month_url in month_urls_list:
+				print(month_url)
 				for a in month_url:
-					month = a["href"].split('_')[2].split('_')[1].split('.')[0]
-					year = a["href"].split('.')[1]
-					month_year = f"{month}_{year}"
+					month = a["href"].split('_')[2].split('-')[1].split('.')[0]
+					season_end = int(a["href"].split('_')[1])
+					season_start = season_end - 1
+					season = f"{season_start}_{season_end}"
 					url = f"https://www.basketball-reference.com{a['href']}" 
 					schedule_table = await self.grab_url_html(session, url, "#all_schedule")
-					self.file_writer("season_schedules", month_year, schedule_table, parsed=True)
-				logging.info("Done scraping season schedules")
+					self.file_writer(f"{season}_schedule", month, schedule_table, parsed=True)
+			logging.info("Done scraping season schedules")
 			
 			return box_score_urls
 
-	async def scrape_box_scores(self, year_start, year_end):
-		box_score_urls = []
-		async with aiohttp.ClientSession() as session:
-			tasks = []
-			for year in range(year_start, year_end + 1):
-				tasks.append(self.scrape_schedule_urls(session, year))
-
-			# Fetch monthly URLs concurrently
-			month_urls_list = await asyncio.gather(*tasks)
-
-			for month_url in month_urls_list:
-				for a in month_url:
-					url = "https://www.basketball-reference.com" + a["href"]
-					schedule_table = await grab_url_html(session, url, "#schedule a")
-
-					for a in schedule_table:
+	async def scrape_box_scores(self):
+		dir = Path(f"{Path.cwd()}/desktop/nba_mvp_predictor/")
+		schedule_dirs = [
+			dir.as_posix() for dir in dir.iterdir() 
+			if dir.is_dir() and "schedule" in dir.as_posix()
+		]
+		for dir in schedule_dirs:
+			season_sch_dir = Path(dir)
+			for item in season_sch_dir.iterdir():
+				with open(item, "r") as file:
+					monthly_schedule = file.read()
+					soup = BeautifulSoup(monthly_schedule, "html.parser")
+					for a in soup.find_all("a"):
 						url = a["href"]
 						if url.startswith("/boxscores/") and url.endswith(".html"):
-							box_score_urls.append("https://www.basketball-reference.com" + url)
-
-		return box_score_urls		
+							box_score_url = f"https://www.basketball-reference.com{url}"
+							async with aiohttp.ClientSession() as session:
+								box_score_page = await self.grab_url_html(session, box_score_url, "#content")
+								file_name = box_score_url.split('/')[4].split(".")[0]
+								year = file_name[0:4]
+								self.file_writer(
+									dir_name="box_scores", 
+									file_name=file_name, 
+									response=box_score_page, 
+									parsed=True
+								)
+		logging.info("Box scores scraped and stored")
 
 	def scrape_mvp_stats(self):
 		"""
