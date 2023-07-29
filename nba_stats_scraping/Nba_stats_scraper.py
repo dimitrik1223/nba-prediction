@@ -47,20 +47,35 @@ class Nba_stats_scraper:
 				time.sleep(sleep_duration)
 			else:
 				return response
+	
+	def fetch_paths(self, is_dir=False, target_dir=None, contains=None):
+		if target_dir:
+			dir = Path(f"{Path.cwd()}/{target_dir}")
+		else:
+			dir = Path(f"{Path.cwd()}")
+		if is_dir:
+			items = [item.as_posix() for item in dir.iterdir() if item.is_dir()]
+		else:
+			items = [item.as_posix() for item in dir.iterdir() if item.is_file()]
+		
+		if contains:
+			items = [item for item in items if f"{contains}" in item]
+		
+		return items
 
-	def file_writer(self, dir_name, file_name, response, target_directory=None, parsed=False):
+	def file_writer(self, dir_name, file_name, response, target_dir=None, parsed=False):
 		"""
 		Write HTML files to directory
 		"""
-		if target_directory is None:
-			target_directory = Path.cwd()/"desktop"/"nba_mvp_predictor"
+		if target_dir is None:
+			target_dir = Path.cwd()
 		else:
-			target_directory = Path(target_directory)
+			target_dir = Path(target_dir)
 		
-		target_directory = target_directory / dir_name
-		target_directory.mkdir(parents=True, exist_ok=True)
+		target_dir = target_dir / dir_name
+		target_dir.mkdir(parents=True, exist_ok=True)
 
-		file_path = target_directory / f"{file_name}.html"
+		file_path = target_dir / f"{file_name}.html"
 		with open(file_path, "w+") as file:
 			if parsed:
 				file.write(str(response))
@@ -110,7 +125,6 @@ class Nba_stats_scraper:
 			# Fetch monthly schedule URLs concurrently
 			month_urls_list = await asyncio.gather(*tasks)
 			for month_url in month_urls_list:
-				print(month_url)
 				for a in month_url:
 					month = a["href"].split('_')[2].split('-')[1].split('.')[0]
 					season_end = int(a["href"].split('_')[1])
@@ -118,17 +132,19 @@ class Nba_stats_scraper:
 					season = f"{season_start}_{season_end}"
 					url = f"https://www.basketball-reference.com{a['href']}" 
 					schedule_table = await self.grab_url_html(session, url, "#all_schedule")
-					self.file_writer(f"{season}_schedule", month, schedule_table, parsed=True)
+					self.file_writer(f"schedules/{season}_schedule", month, schedule_table, parsed=True)
 			logging.info("Done scraping season schedules")
 			
 			return box_score_urls
-
+	
+	def parse_schedules(self):
+		schedule_dirs = self.fetch_paths(True, "schedule")
+		for dir in schedule_dirs:
+			with open(dir, "r") as file:
+				
+	
 	async def scrape_box_scores(self):
-		dir = Path(f"{Path.cwd()}/desktop/nba_mvp_predictor/")
-		schedule_dirs = [
-			dir.as_posix() for dir in dir.iterdir() 
-			if dir.is_dir() and "schedule" in dir.as_posix()
-		]
+		schedule_dirs = self.fetch_paths(True, "schedule")
 		for dir in schedule_dirs:
 			season_sch_dir = Path(dir)
 			for item in season_sch_dir.iterdir():
