@@ -5,7 +5,7 @@ import asyncio
 import aiohttp
 import pathlib as Path
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Comment
 from .utils import fetch_paths, retry_request, file_writer
 
 async def grab_url_html(session, url, selector, sleep=5, retries=3):
@@ -58,6 +58,14 @@ async def scrape_schedules(year_start, year_end):
 			
 		return box_score_urls
 
+def uncomment_html(soup, id):
+	for comment in soup(text=lambda text: isinstance(text, Comment)):
+		if id in comment.string:
+			tag = BeautifulSoup(comment, "html.parser")
+			html_str = str(comment.replace_with(tag))
+			html = BeautifulSoup(html_str, "html.parser")
+			return html
+
 def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) -> dict:
 	"""
 	Iterates through directory and parses deserved elements from HTML files. 
@@ -79,6 +87,7 @@ def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) ->
 				html = file.read()
 				soup = BeautifulSoup(html, "html.parser")
 				for id in html_ids:
+					soup = uncomment_html(soup, id)
 					table = soup.find_all(id=f"{id}")
 					table_df = pd.read_html(str(table))
 					dfs.append(table_df)
