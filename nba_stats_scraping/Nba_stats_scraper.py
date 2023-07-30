@@ -57,22 +57,37 @@ async def scrape_schedules(year_start, year_end):
 		logging.info("Done scraping season schedules")
 			
 		return box_score_urls
-	
-def parse_schedules():
-	dfs = []
-	schedule_dirs = fetch_paths(is_dir=True, contains="schedule")
+
+def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) -> dict:
+	"""
+	Iterates through directory and parses deserved elements from HTML files. 
+	"""
+	if not isinstance(html_ids, list):
+		raise TypeError("html_ids must be a list of HTML element IDs.")
+
+	table_dict = {}
+	schedule_dirs = fetch_paths(
+		is_dir=True,
+		target_dir=target_dir,
+		contains=path_sub_str
+	)
 	for dir in schedule_dirs:
 		schedule_files = fetch_paths(target_dir=dir)
 		for path in schedule_files:
+			dfs = []
 			with open(path, "r") as file:
-				schedule_html = file.read()
-				soup = BeautifulSoup(schedule_html, "html.parser")
-				schedule_table = soup.find_all(id="schedule")
-				schedule_df = pd.read_html(str(schedule_table))
-				dfs.append(schedule_df[0])
-	full_schedule_df = pd.concat(dfs).reset_index(drop=True)
-  
-	return full_schedule_df
+				html = file.read()
+				soup = BeautifulSoup(html, "html.parser")
+				for id in html_ids:
+					table = soup.find_all(id=f"{id}")
+					table_df = pd.read_html(str(table))
+					dfs.append(table_df)
+					table_dict[f"{id}"] = dfs
+	
+	for key, value in table_dict.items():
+		table_dict[key] = pd.concat(value).reset_index(drop=True)
+
+	return table_dict
 
 async def scrape_box_scores():
 	schedule_dirs = fetch_paths(True, "schedule")
