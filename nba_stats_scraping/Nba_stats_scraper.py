@@ -59,14 +59,21 @@ async def scrape_schedules(year_start, year_end):
 		return box_score_urls
 	
 def parse_schedules():
-	schedule_dirs = fetch_paths(True, "schedule")
+	dfs = []
+	schedule_dirs = fetch_paths(is_dir=True, contains="schedule")
 	for dir in schedule_dirs:
 		schedule_files = fetch_paths(target_dir=dir)
 		for path in schedule_files:
 			with open(path, "r") as file:
 				schedule_html = file.read()
-				print(schedule_html)
-				
+				soup = BeautifulSoup(schedule_html, "html.parser")
+				schedule_table = soup.find_all(id="schedule")
+				schedule_df = pd.read_html(str(schedule_table))
+				dfs.append(schedule_df[0])
+	full_schedule_df = pd.concat(dfs).reset_index(drop=True)
+  
+	return full_schedule_df
+
 async def scrape_box_scores():
 	schedule_dirs = fetch_paths(True, "schedule")
 	for dir in schedule_dirs:
