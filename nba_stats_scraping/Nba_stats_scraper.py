@@ -1,13 +1,95 @@
-import os
 import time
-import requests
 import pandas as pd
 import logging
 import asyncio
 import aiohttp
+import pathlib as Path
 
-from pathlib import Path
 from bs4 import BeautifulSoup
+from .utils import fetch_paths, retry_request, file_writer
+
+async def grab_url_html(session, url, selector, sleep=5, retries=3):
+	"""
+	Async coroutine function for parsing HTML element from
+	given url. Designed to be used with aiohttp a async
+	HTTP client.
+	"""
+	for i in range(1, retries + 1):
+		# Exponential backoff
+		sleep_dur = sleep ** i
+		time.sleep(sleep_dur)
+		print(f"ZzZ... slept for {sleep_dur} seconds")
+		try:
+			async with session.get(url) as response:
+				html = await response.text()
+				soup = BeautifulSoup(html, "html.parser")
+				parsed_html =  soup.select(selector)
+				return parsed_html
+		except:
+			# Replace with error behaviour
+			print("HTTP Error")
+			continue
+
+async def scrape_schedule_urls(session, year):
+	# Fetch filter elements containing URLs to game schedules per month
+	url = f"https://www.basketball-reference.com/leagues/NBA_{year}_games.html"
+
+	return await grab_url_html(session, url, "#content .filter a")
+
+async def scrape_schedules(year_start, year_end):
+	box_score_urls = []
+	async with aiohttp.ClientSession() as session:
+		tasks = []
+		for year in range(year_start, year_end + 1):
+			tasks.append(scrape_schedule_urls(session, year))
+
+		# Fetch monthly schedule URLs concurrently
+		month_urls_list = await asyncio.gather(*tasks)
+		for month_url in month_urls_list:
+			for a in month_url:
+				month = a["href"].split('_')[2].split('-')[1].split('.')[0]
+				season_end = int(a["href"].split('_')[1])
+				season_start = season_end - 1
+				season = f"{season_start}_{season_end}"
+				url = f"https://www.basketball-reference.com{a['href']}" 
+				schedule_table = await grab_url_html(session, url, "#all_schedule")
+				file_writer(f"schedules/{season}_schedule", month, schedule_table, parsed=True)
+		logging.info("Done scraping season schedules")
+			
+		return box_score_urls
+	
+def parse_schedules():
+	schedule_dirs = fetch_paths(True, "schedule")
+	for dir in schedule_dirs:
+		schedule_files = fetch_paths(target_dir=dir)
+		for path in schedule_files:
+			with open(path, "r") as file:
+				schedule_html = file.read()
+				print(schedule_html)
+				
+async def scrape_box_scores():
+	schedule_dirs = fetch_paths(True, "schedule")
+	for dir in schedule_dirs:
+		season_sch_dir = Path(dir)
+		for item in season_sch_dir.iterdir():
+			with open(item, "r") as file:
+				monthly_schedule = file.read()
+				soup = BeautifulSoup(monthly_schedule, "html.parser")
+				for a in soup.find_all("a"):
+					url = a["href"]
+					if url.startswith("/boxscores/") and url.endswith(".html"):
+						box_score_url = f"https://www.basketball-reference.com{url}"
+						async with aiohttp.ClientSession() as session:
+							box_score_page = await grab_url_html(session, box_score_url, "#content")
+							file_name = box_score_url.split('/')[4].split(".")[0]
+							year = file_name[0:4]
+							file_writer(
+								dir_name="box_scores", 
+								file_name=file_name, 
+								response=box_score_page, 
+								parsed=True
+							)
+		logging.info("Box scores scraped and stored")
 
 class Nba_stats_scraper:
 	"""
@@ -19,154 +101,6 @@ class Nba_stats_scraper:
 		self.year_end = year_end
 		self.years = list(range(self.year_start, self.year_end))
 
-	def make_request(self, url):
-		"""
-		Make get request to basketball-references.com
-		"""
-		try:
-			response = requests.get(url)
-			if response.status_code == 429:
-				raise requests.exceptions.HTTPError("Rate limit exceeded")
-			response.raise_for_status()
-			return response
-		except requests.exceptions.RequestException as e:
-			print(f"Network request error: {e}")
-			return None
-
-	def retry_request(self, url, max_retries=3):
-		"""
-		Retry on get requests
-		"""
-		retries = 0
-		while retries < max_retries:
-			response = self.make_request(url)
-			if response.status_code == 429:
-				retries += 1
-				sleep_duration = int(response.headers.get("Retry-After", 1))
-				print(f"Retrying after {sleep_duration} seconds")
-				time.sleep(sleep_duration)
-			else:
-				return response
-	
-	def fetch_paths(self, is_dir=False, target_dir=None, contains=None):
-		if target_dir:
-			dir = Path(f"{Path.cwd()}/{target_dir}")
-		else:
-			dir = Path(f"{Path.cwd()}")
-		if is_dir:
-			items = [item.as_posix() for item in dir.iterdir() if item.is_dir()]
-		else:
-			items = [item.as_posix() for item in dir.iterdir() if item.is_file()]
-		
-		if contains:
-			items = [item for item in items if f"{contains}" in item]
-		
-		return items
-
-	def file_writer(self, dir_name, file_name, response, target_dir=None, parsed=False):
-		"""
-		Write HTML files to directory
-		"""
-		if target_dir is None:
-			target_dir = Path.cwd()
-		else:
-			target_dir = Path(target_dir)
-		
-		target_dir = target_dir / dir_name
-		target_dir.mkdir(parents=True, exist_ok=True)
-
-		file_path = target_dir / f"{file_name}.html"
-		with open(file_path, "w+") as file:
-			if parsed:
-				file.write(str(response))
-			else:		
-				file.write(response.text)		
-		# Read and return the content of the file
-		with open(file_path) as file:
-			page = file.read()
-
-		return page
-
-	async def grab_url_html(self, session, url, selector, sleep=5, retries=3):
-		"""
-		Async coroutine function for parsing HTML element from
-		given url. Designed to be used with aiohttp a async
-		HTTP client.
-		"""
-		for i in range(1, retries + 1):
-			# Exponential backoff
-			sleep_dur = sleep ** i
-			time.sleep(sleep_dur)
-			print(f"ZzZ... slept for {sleep_dur} seconds")
-			try:
-				async with session.get(url) as response:
-					html = await response.text()
-					soup = BeautifulSoup(html, "html.parser")
-					parsed_html =  soup.select(selector)
-					return parsed_html
-			except:
-				# Replace with error behaviour
-				print("HTTP Error")
-				continue
-
-	async def scrape_schedule_urls(self, session, year):
-		# Fetch filter elements containing URLs to game schedules per month
-		url = f"https://www.basketball-reference.com/leagues/NBA_{year}_games.html"
-
-		return await self.grab_url_html(session, url, "#content .filter a")
-
-	async def scrape_schedules(self):
-		box_score_urls = []
-		async with aiohttp.ClientSession() as session:
-			tasks = []
-			for year in range(self.year_start, self.year_end + 1):
-				tasks.append(self.scrape_schedule_urls(session, year))
-
-			# Fetch monthly schedule URLs concurrently
-			month_urls_list = await asyncio.gather(*tasks)
-			for month_url in month_urls_list:
-				for a in month_url:
-					month = a["href"].split('_')[2].split('-')[1].split('.')[0]
-					season_end = int(a["href"].split('_')[1])
-					season_start = season_end - 1
-					season = f"{season_start}_{season_end}"
-					url = f"https://www.basketball-reference.com{a['href']}" 
-					schedule_table = await self.grab_url_html(session, url, "#all_schedule")
-					self.file_writer(f"schedules/{season}_schedule", month, schedule_table, parsed=True)
-			logging.info("Done scraping season schedules")
-			
-			return box_score_urls
-	
-	def parse_schedules(self):
-		schedule_dirs = self.fetch_paths(True, "schedule")
-		for dir in schedule_dirs:
-			with open(dir, "r") as file:
-				
-	
-	async def scrape_box_scores(self):
-		schedule_dirs = self.fetch_paths(True, "schedule")
-		for dir in schedule_dirs:
-			season_sch_dir = Path(dir)
-			for item in season_sch_dir.iterdir():
-				with open(item, "r") as file:
-					monthly_schedule = file.read()
-					soup = BeautifulSoup(monthly_schedule, "html.parser")
-					for a in soup.find_all("a"):
-						url = a["href"]
-						if url.startswith("/boxscores/") and url.endswith(".html"):
-							box_score_url = f"https://www.basketball-reference.com{url}"
-							async with aiohttp.ClientSession() as session:
-								box_score_page = await self.grab_url_html(session, box_score_url, "#content")
-								file_name = box_score_url.split('/')[4].split(".")[0]
-								year = file_name[0:4]
-								self.file_writer(
-									dir_name="box_scores", 
-									file_name=file_name, 
-									response=box_score_page, 
-									parsed=True
-								)
-		logging.info("Box scores scraped and stored")
-
 	def scrape_mvp_stats(self):
 		"""
 		Scrape dataset of historical MVP award voting statistics
@@ -174,9 +108,9 @@ class Nba_stats_scraper:
 		mvp_dfs = []
 		for year in self.years:
 			url = f"https://www.basketball-reference.com/awards/awards_{year}.html"
-			response = self.retry_request(url, max_retries=3)
+			response = retry_request(url, max_retries=3)
 			time.sleep(5)
-			page = self.file_writer("nba_stats_scraping/mvp/", year, response)
+			page = file_writer("nba_stats_scraping/mvp/", year, response)
 			soup = BeautifulSoup(page, "html.parser")
 			soup.find('tr', class_="over_header").decompose()
 			mvp_table = soup.find_all(id="mvp")
@@ -194,9 +128,9 @@ class Nba_stats_scraper:
 		per_game_stats_dfs = []
 		for year in self.years:
 			url = f"https://www.basketball-reference.com/leagues/NBA_{year}_per_game.html"
-			response = self.retry_request(url, max_retries=3)
+			response = retry_request(url, max_retries=3)
 			time.sleep(5)
-			page = self.file_writer("nba_stats_scraping/player_stats/", year, response)
+			page = file_writer("nba_stats_scraping/player_stats/", year, response)
 			soup = BeautifulSoup(page, "html.parser")
 			per_game_stats = soup.find_all(id="per_game_stats")
 			per_game_stats = pd.read_html(str(per_game_stats))[0]
@@ -213,9 +147,9 @@ class Nba_stats_scraper:
 		team_standings = []
 		for year in self.years:
 			url = f"https://www.basketball-reference.com/leagues/NBA_{year}_standings.html"
-			response = self.retry_request(url, max_retries=3)
+			response = retry_request(url, max_retries=3)
 			time.sleep(5)
-			page = self.file_writer("nba_stats_scraping/team_standings/", year, response)
+			page = file_writer("nba_stats_scraping/team_standings/", year, response)
 			soup = BeautifulSoup(page, "html.parser")
 			for header in soup.find_all("tr", class_="thead"):
 				header.decompose()
