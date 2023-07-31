@@ -59,12 +59,29 @@ async def scrape_schedules(year_start, year_end):
 		return box_score_urls
 
 def uncomment_html(soup, id):
+	"""
+	Convert comment block containing HTML to parsable HTML.
+	"""
 	for comment in soup(text=lambda text: isinstance(text, Comment)):
 		if id in comment.string:
 			tag = BeautifulSoup(comment, "html.parser")
 			html_str = str(comment.replace_with(tag))
 			html = BeautifulSoup(html_str, "html.parser")
 			return html
+	return soup
+
+def extract_team_abr(soup):
+	"""
+	Extract team abreviations from parsed boxscores page HTML
+	"""
+	team_abrs = []
+	hyperlinks = soup.find_all("a")
+	for link in hyperlinks:
+		if "/teams/" in link["href"]:
+			team_abr = link["href"].split("/")[2]
+			team_abrs.append(team_abr)
+			if len(team_abrs) == 2:
+				return team_abrs
 
 def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) -> dict:
 	"""
@@ -74,24 +91,32 @@ def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) ->
 		raise TypeError("html_ids must be a list of HTML element IDs.")
 
 	table_dict = {}
-	schedule_dirs = fetch_paths(
+	dir = fetch_paths(
 		is_dir=True,
 		target_dir=target_dir,
 		contains=path_sub_str
 	)
-	for dir in schedule_dirs:
-		schedule_files = fetch_paths(target_dir=dir)
-		for path in schedule_files:
+	for item in dir:
+		files = fetch_paths(target_dir=item)
+		for path in files:
 			dfs = []
 			with open(path, "r") as file:
 				html = file.read()
 				soup = BeautifulSoup(html, "html.parser")
+				if "boxscores" in path:
+					team_abrs = extract_team_abr(soup)
+					advanced_stats_ids = [f"box-{team_abr}-game-basic" for team_abr in team_abrs]
+					for id in advanced_stats_ids:
+						html_ids.append(id)
 				for id in html_ids:
+					soup = BeautifulSoup(html, "html.parser")
 					soup = uncomment_html(soup, id)
 					table = soup.find_all(id=f"{id}")
 					table_df = pd.read_html(str(table))
 					dfs.append(table_df)
 					table_dict[f"{id}"] = dfs
+				for id in advanced_stats_ids:
+					html_ids.remove(id)
 	
 	for key, value in table_dict.items():
 		table_dict[key] = pd.concat(value).reset_index(drop=True)
@@ -113,10 +138,11 @@ async def scrape_box_scores():
 						async with aiohttp.ClientSession() as session:
 							box_score_page = await grab_url_html(session, box_score_url, "#content")
 							file_name = box_score_url.split('/')[4].split(".")[0]
-							year = file_name[0:4]
+							season_end = int(file_name[0:4])
+							season_start = season_end - 1
 							file_writer(
-								dir_name="box_scores", 
-								file_name=file_name, 
+								dir_name=f"boxscores/{season_start}_{season_end}_boxscores", 
+								file_name=file_name,
 								response=box_score_page, 
 								parsed=True
 							)
