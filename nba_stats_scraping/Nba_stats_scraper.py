@@ -100,6 +100,7 @@ def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) ->
 		files = fetch_paths(target_dir=item)
 		for path in files:
 			dfs = []
+			add_team_stats = False
 			with open(path, "r") as file:
 				html = file.read()
 				soup = BeautifulSoup(html, "html.parser")
@@ -109,6 +110,7 @@ def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) ->
 					team_stat_ids = [f"box-{team_abr}-game-basic" for team_abr in team_abrs]
 					for id in team_stat_ids:
 						html_ids.append(id)
+					add_team_stats = True
 				for id in html_ids:
 					uncomm_soup = uncomment_html(soup, id)
 					table = uncomm_soup.find_all(id=f"{id}")
@@ -116,7 +118,7 @@ def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) ->
 					dfs.append(table_df)
 					table_dict[f"{id}"] = dfs
 				# Remove added HTML team stat table ids
-				if team_stat_ids:
+				if add_team_stats:
 					for id in team_stat_ids:
 						html_ids.remove(id)
 
