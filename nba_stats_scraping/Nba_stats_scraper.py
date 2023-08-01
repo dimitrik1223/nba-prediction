@@ -103,21 +103,23 @@ def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) ->
 			with open(path, "r") as file:
 				html = file.read()
 				soup = BeautifulSoup(html, "html.parser")
+				# Add HTML team stat table ids dynamically
 				if "boxscores" in path:
 					team_abrs = extract_team_abr(soup)
-					advanced_stats_ids = [f"box-{team_abr}-game-basic" for team_abr in team_abrs]
-					for id in advanced_stats_ids:
+					team_stat_ids = [f"box-{team_abr}-game-basic" for team_abr in team_abrs]
+					for id in team_stat_ids:
 						html_ids.append(id)
 				for id in html_ids:
-					soup = BeautifulSoup(html, "html.parser")
-					soup = uncomment_html(soup, id)
-					table = soup.find_all(id=f"{id}")
+					uncomm_soup = uncomment_html(soup, id)
+					table = uncomm_soup.find_all(id=f"{id}")
 					table_df = pd.read_html(str(table))
 					dfs.append(table_df)
 					table_dict[f"{id}"] = dfs
-				for id in advanced_stats_ids:
-					html_ids.remove(id)
-	
+				# Remove added HTML team stat table ids
+				if team_stat_ids:
+					for id in team_stat_ids:
+						html_ids.remove(id)
+
 	for key, value in table_dict.items():
 		table_dict[key] = pd.concat(value).reset_index(drop=True)
 
