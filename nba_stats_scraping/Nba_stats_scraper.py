@@ -97,30 +97,32 @@ def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) ->
 		contains=path_sub_str
 	)
 	for item in dir:
-		files = fetch_paths(target_dir=item)
-		for path in files:
-			dfs = []
-			add_team_stats = False
-			with open(path, "r") as file:
-				html = file.read()
-				soup = BeautifulSoup(html, "html.parser")
-				# Add HTML team stat table ids dynamically
-				if "boxscores" in path:
-					team_abrs = extract_team_abr(soup)
-					team_stat_ids = [f"box-{team_abr}-game-basic" for team_abr in team_abrs]
-					for id in team_stat_ids:
-						html_ids.append(id)
-					add_team_stats = True
-				for id in html_ids:
-					uncomm_soup = uncomment_html(soup, id)
-					table = uncomm_soup.find_all(id=f"{id}")
-					table_df = pd.read_html(str(table))
-					dfs.append(table_df)
-					table_dict[f"{id}"] = dfs
-				# Remove added HTML team stat table ids
-				if add_team_stats:
-					for id in team_stat_ids:
-						html_ids.remove(id)
+		sub_dirs = fetch_paths(is_dir=True, target_dir=item)
+		for dir in sub_dirs:
+			files = fetch_paths(target_dir=dir)
+			for path in files:
+				dfs = []
+				add_team_stats = False
+				with open(path, "r") as file:
+					html = file.read()
+					soup = BeautifulSoup(html, "html.parser")
+					# Add HTML team stat table ids dynamically
+					if "boxscores" in path:
+						team_abrs = extract_team_abr(soup)
+						team_stat_ids = [f"box-{team_abr}-game-basic" for team_abr in team_abrs]
+						for id in team_stat_ids:
+							html_ids.append(id)
+						add_team_stats = True
+					for id in html_ids:
+						uncomm_soup = uncomment_html(soup, id)
+						table = uncomm_soup.find_all(id=f"{id}")
+						table_df = pd.read_html(str(table))
+						dfs.append(table_df[0])
+						table_dict[f"{id}"] = dfs
+					# Remove added HTML team stat table ids
+					if add_team_stats:
+						for id in team_stat_ids:
+							html_ids.remove(id)
 
 	for key, value in table_dict.items():
 		table_dict[key] = pd.concat(value).reset_index(drop=True)
