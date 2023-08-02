@@ -3,7 +3,7 @@ import pandas as pd
 import logging
 import asyncio
 import aiohttp
-import pathlib as Path
+from pathlib import Path
 
 from bs4 import BeautifulSoup, Comment
 from .utils import fetch_paths, retry_request, file_writer
@@ -128,7 +128,7 @@ def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) ->
 	return table_dict
 
 async def scrape_box_scores():
-	schedule_dirs = fetch_paths(True, "schedule")
+	schedule_dirs = fetch_paths(True, contains="schedule")
 	for dir in schedule_dirs:
 		season_sch_dir = Path(dir)
 		for item in season_sch_dir.iterdir():
