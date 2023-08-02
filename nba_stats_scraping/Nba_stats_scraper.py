@@ -1,5 +1,6 @@
 import time
 import pandas as pd
+import datetime
 import logging
 import asyncio
 import aiohttp
@@ -90,7 +91,12 @@ def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) ->
 	if not isinstance(html_ids, list):
 		raise TypeError("html_ids must be a list of HTML element IDs.")
 
-	table_dict = {}
+	table_dict = {
+		"schedule": [],
+		"four_factors": [],
+		"line_score": [],
+		"team_stats": []
+	}
 	dir = fetch_paths(
 		is_dir=True,
 		target_dir=target_dir,
@@ -101,7 +107,6 @@ def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) ->
 		for dir in sub_dirs:
 			files = fetch_paths(target_dir=dir)
 			for path in files:
-				dfs = []
 				add_team_stats = False
 				with open(path, "r") as file:
 					html = file.read()
@@ -112,20 +117,32 @@ def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) ->
 						team_stat_ids = [f"box-{team_abr}-game-basic" for team_abr in team_abrs]
 						for id in team_stat_ids:
 							html_ids.append(id)
+						# Parse game datetime from file name in boxscores sub directory
+						date = datetime.date(
+							int(path[-17:-13]), 
+							int(path[-13:-11]), 
+							int(path[-11:-9]))
 						add_team_stats = True
+					else:
+						date = None
 					for id in html_ids:
 						uncomm_soup = uncomment_html(soup, id)
 						table = uncomm_soup.find_all(id=f"{id}")
-						table_df = pd.read_html(str(table))
-						dfs.append(table_df[0])
-						table_dict[f"{id}"] = dfs
+						table_df = pd.read_html(str(table))[0]
+						if date != None:
+							table_df["date"] = date
+						if "game-basic" in id:
+							table_dict["team_stats"].append(table_df)
+						else:
+							table_dict[f"{id}"].append(table_df)
 					# Remove added HTML team stat table ids
 					if add_team_stats:
 						for id in team_stat_ids:
 							html_ids.remove(id)
 
 	for key, value in table_dict.items():
-		table_dict[key] = pd.concat(value).reset_index(drop=True)
+		if value != []:
+			table_dict[key] = pd.concat(value).reset_index(drop=True)
 
 	return table_dict
 
