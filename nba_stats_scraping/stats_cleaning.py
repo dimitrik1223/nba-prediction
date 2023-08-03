@@ -94,9 +94,9 @@ def merge_boxscores(schedule_dict, boxscore_dict):
 		"PTS.1": "Home_pts",
 		"Attend.": "Attendance"
 	}, inplace=True)
-	schedule = schedule[["Date", "Start_time", "Visitor_pts", "Home_pts", "Attendance"]]
 	input_format = "%a, %b %d, %Y"
 	schedule["Date"] = schedule["Date"].apply(lambda date: datetime.strptime(date, input_format))
+	schedule = schedule[["Date", "Start_time", "Visitor_pts", "Home_pts", "Attendance"]]
 	four_factors = boxscore_dict["four_factors"]
 	line_score = boxscore_dict["line_score"]
 	team_stats = boxscore_dict["team_stats"]
