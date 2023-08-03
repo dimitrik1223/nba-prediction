@@ -80,6 +80,42 @@ def create_stats_basetable(mvp_stats, player_stats, team_stats):
 	stats = stats.fillna(0)
 	for col in stats.columns:
 		stats[col] = pd.to_numeric(stats[col], errors="ignore")
-	stats["id"] = stats.index + 1
-
+	
 	return stats
+
+def merge_boxscores(schedule_dict, boxscore_dict):
+	schedule = schedule_dict["schedule"]
+	schedule = schedule[schedule.Date != "Playoffs"]
+	schedule.rename(columns={
+		"Start (ET)": "Start_time",
+		"PTS": "Visitor_pts",
+		"PTS.1": "Home_pts",
+		"Attend.": "Attendance"
+	}, inplace=True)
+	schedule = schedule[["Date", "Start_time", "Visitor_pts", "Home_pts", "Attendance"]]
+	input_format = "%a, %b %d, %Y"
+	schedule["Date"] = schedule["Date"].apply(lambda date: datetime.strptime(date, input_format))
+	four_factors = boxscore_dict["four_factors"]
+	line_score = boxscore_dict["line_score"]
+	team_stats = boxscore_dict["team_stats"]
+	four_factors = boxscore_dict["four_factors"]
+	four_factors.rename(columns={"Unnamed: 0_level_1": "Team"}, inplace=True)
+	line_score = boxscore_dict["line_score"]
+	line_score.rename(columns={
+		"Unnamed: 0_level_1": "Team",
+		"1": "Q1",
+		"2": "Q2",
+		"3": "Q3",
+		"4": "Q4",
+		"T": "Total"
+	}, inplace=True)
+	line_score.drop(columns="Team", inplace=True)
+	boxscore_stats = schedule.merge(
+		four_factors, how="outer", on="Date"
+	).merge(
+		line_score, how="outer", on="Date"
+	).merge(
+		team_stats, how="outer", on="Date"
+	)
+
+	return boxscore_stats

@@ -1,6 +1,6 @@
 import requests
 import time
-import pathlib as Path
+from pathlib import Path
 
 def make_request(url):
 	"""
@@ -57,15 +57,16 @@ def file_writer(dir_name, file_name, response, target_dir=None, parsed=False):
 
 def fetch_paths(is_dir=False, target_dir=None, contains=None):
 	if target_dir:
-		dir = Path(f"{Path.cwd()}/{target_dir}")
+		dir = Path(target_dir)
 	else:
 		dir = Path(f"{Path.cwd()}")
 	if is_dir:
 		items = [item.as_posix() for item in dir.iterdir() if item.is_dir()]
 	else:
 		items = [item.as_posix() for item in dir.iterdir() if item.is_file()]
-		
+
 	if contains:
 		items = [item for item in items if f"{contains}" in item]
 		
 	return items
+
