@@ -129,8 +129,11 @@ def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) ->
 						uncomm_soup = uncomment_html(soup, id)
 						table = uncomm_soup.find_all(id=f"{id}")
 						table_df = pd.read_html(str(table))[0]
+						# If not boxscores table
 						if date != None:
 							table_df["date"] = date
+							# Flatten column hierarchy 
+							table_df.columns = table_df.columns.get_level_values(1)
 						if "game-basic" in id:
 							table_dict["team_stats"].append(table_df)
 						else:
