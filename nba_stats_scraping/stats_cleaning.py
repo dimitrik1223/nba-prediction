@@ -1,5 +1,7 @@
 import pandas as pd
 
+from datetime import datetime
+
 def extract_total_row(data):
 	"""
 	Extracts the stat totals row from dataframe of per game player statistcs.

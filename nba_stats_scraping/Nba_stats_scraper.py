@@ -1,6 +1,6 @@
 import time
 import pandas as pd
-import datetime
+import datetime as dt
 import logging
 import asyncio
 import aiohttp
@@ -118,7 +118,7 @@ def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) ->
 						for id in team_stat_ids:
 							html_ids.append(id)
 						# Parse game datetime from file name in boxscores sub directory
-						date = datetime.date(
+						date = dt.datetime(
 							int(path[-17:-13]), 
 							int(path[-13:-11]), 
 							int(path[-11:-9]))
@@ -131,7 +131,7 @@ def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) ->
 						table_df = pd.read_html(str(table))[0]
 						# If not boxscores table
 						if date != None:
-							table_df["date"] = date
+							table_df["Date"] = date
 							# Flatten column hierarchy 
 							table_df.columns = table_df.columns.get_level_values(1)
 						if "game-basic" in id:
