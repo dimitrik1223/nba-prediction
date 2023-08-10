@@ -131,9 +131,9 @@ def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) ->
 						table_df = pd.read_html(str(table))[0]
 						# If not boxscores table
 						if date != None:
-							table_df["Date"] = date
 							# Flatten column hierarchy 
 							table_df.columns = table_df.columns.get_level_values(1)
+							table_df["Date"] = date
 						if "game-basic" in id:
 							table_dict["team_stats"].append(table_df)
 						else:
@@ -149,7 +149,7 @@ def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) ->
 
 	return table_dict
 
-async def scrape_box_scores():
+async def scrape_boxscores():
 	schedule_dirs = fetch_paths(True, contains="schedule")
 	for dir in schedule_dirs:
 		season_sch_dir = Path(dir)
@@ -164,10 +164,9 @@ async def scrape_box_scores():
 						async with aiohttp.ClientSession() as session:
 							box_score_page = await grab_url_html(session, box_score_url, "#content")
 							file_name = box_score_url.split('/')[4].split(".")[0]
-							season_end = int(file_name[0:4])
-							season_start = season_end - 1
+							season = season = dir.split(f"schedules")[1]
 							file_writer(
-								dir_name=f"boxscores/{season_start}_{season_end}_boxscores", 
+								dir_name=f"boxscores/{season}boxscores", 
 								file_name=file_name,
 								response=box_score_page, 
 								parsed=True
