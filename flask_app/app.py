@@ -5,18 +5,18 @@ import pandas as pd
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 from machine_learning.nn_regressor import predict, get_predicted_mvp
 from flask import Flask, request, render_template, redirect, url_for
-from .utils import get_conn, query_db
+from .utils import get_conn, query_db, fetch_all_mvps
 
 app = Flask(__name__)
-psql_config = {
+PSQL_CONFIG = {
 	"host": "localhost",
 	"database": "flask_db",
 	"user": os.getenv('DB_USERNAME'),
 	"password": os.getenv('DB_PASSWORD'),
 }
-global conn
-conn = get_conn(psql_config)
-years = query_db(conn,
+global CONN
+CONN = get_conn(PSQL_CONFIG)
+years = query_db(CONN,
 	"""
 	SELECT
 		MIN("Year") as first_year,
@@ -24,21 +24,32 @@ years = query_db(conn,
 	FROM all_stats
 	"""
 )
-first_year, last_year = years[0][0], years[0][1]
-years = range(first_year, (last_year + 1))
-nba_seasons = [f"{str(year - 1)}-{str(year)}" for year in years]
-year_season_map = dict(zip(nba_seasons, years))
-predictors = query_db(conn, "SELECT * FROM mvp_predictors")
-stats = query_db(conn, "SELECT * FROM all_stats")
-cols_res = query_db(conn,
+FIRST_YEAR, LAST_YEAR = years[0][0], years[0][1]
+YEARS = range(FIRST_YEAR, (LAST_YEAR + 1))
+NBA_SEASONS = [f"{str(year - 1)}-{str(year)}" for year in YEARS]
+YEAR_SEASON_MAP = dict(zip(NBA_SEASONS, YEARS))
+PREDICTORS = query_db(CONN, "SELECT * FROM mvp_predictors")
+STATS = query_db(CONN, "SELECT * FROM all_stats")
+cols_res = query_db(CONN,
 	"""
 	SELECT column_name FROM information_schema.columns
 	WHERE table_name = 'all_stats'
 	ORDER BY ordinal_position
 	"""
 )
-cols = [col[0] for col in cols_res]
-stats_df = pd.DataFrame(stats, columns=cols)
+COLS = [col[0] for col in cols_res]
+STATS_DF = pd.DataFrame(STATS, columns=COLS)
+
+
+def get_data(season, year_season_map=YEAR_SEASON_MAP, predictors=PREDICTORS, stats_df=STATS_DF, data_retrieved=False):
+	while data_retrieved == False:
+		with open("mvp_model.pkl", "rb") as file:
+			model = pickle.load(file)
+		preds = predict(model=model, data=PREDICTORS)
+		year = YEAR_SEASON_MAP[season]
+		mvp_res = get_predicted_mvp(data=STATS_DF, preds=preds, year=year)
+		data_retrieved = True
+	return year, mvp_res
 
 @app.route('/index/', methods=["GET", "POST"])
 def index():
@@ -48,17 +59,7 @@ def index():
 	if request.method == "POST" and request.path == "/index/":
 		season = request.form["season"]
 		return redirect(url_for("predict_mvp", season=season))
-	return render_template("index/index.html", nba_seasons=nba_seasons)
-
-def get_data(season, year_season_map=year_season_map, predictors=predictors, stats_df=stats_df, data_retrieved=False):
-	while data_retrieved == False:
-		with open("mvp_model.pkl", "rb") as file:
-			model = pickle.load(file)
-		preds = predict(model=model, data=predictors)
-		year = year_season_map[season]
-		mvp_res = get_predicted_mvp(data=stats_df, preds=preds, year=year)
-		data_retrieved = True
-	return year, mvp_res
+	return render_template("index/index.html", nba_seasons=NBA_SEASONS)
 
 @app.route('/index/prediction/<season>', methods=["GET", "POST"])
 def predict_mvp(season):
@@ -69,7 +70,7 @@ def predict_mvp(season):
 	if "'" in mvp_pred:
 		esc_char_ind = mvp_pred.index("'")
 		mvp_pred = mvp_pred[:esc_char_ind] + "\\" + mvp_pred[esc_char_ind:]
-	mvp_pred_res = query_db(conn, 
+	mvp_pred_res = query_db(CONN, 
 		f"""
 		SELECT
 			{",".join(key_stats)}
@@ -81,6 +82,7 @@ def predict_mvp(season):
 	mvp_pred_sts = pd.DataFrame(mvp_pred_res, columns=[col.strip('"') for col in key_stats])
 	pred_img_url = "mvp_imgs/" + mvp_pred.lower().replace(" ", "_") + ".jpg"
 	actual_img_url = "mvp_imgs/" + mvp_actual.lower().replace("-", " ").replace(" ", "_") + ".jpg"
+	all_mvps = fetch_all_mvps(CONN)
 	if request.method == "POST":
 		if request.form.get("Yes"):
 			if mvp_pred == mvp_actual:
@@ -112,7 +114,8 @@ def predict_mvp(season):
 					season=season,
 					mvp_actual=mvp_actual,
 					actual_img_url=actual_img_url,
-					corr_res_val=corr_res_val
+					corr_res_val=corr_res_val,
+					all_mvps=all_mvps
 				)
 			else:
 				return render_template(
