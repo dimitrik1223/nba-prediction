@@ -37,7 +37,6 @@ async def grab_url_html(session, url, selector, sleep=5, retries=3):
 async def scrape_schedule_urls(session, year):
 	# Fetch filter elements containing URLs to game schedules per month
 	url = f"https://www.basketball-reference.com/leagues/NBA_{year}_games.html"
-	print(url)
 
 	return await grab_url_html(session, url, "#content .filter a")
 

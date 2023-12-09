@@ -112,12 +112,11 @@ def merge_boxscores(schedule_dict, boxscore_dict):
 		"T": "Total"
 	}, inplace=True)
 	line_score.drop(columns="Team", inplace=True)
-	boxscore_stats = schedule.merge(
-		four_factors, how="outer", on="Date"
-	).merge(
-		line_score, how="outer", on="Date"
-	).merge(
-		team_stats, how="outer", on="Date"
-	)
+	df_list = [schedule, four_factors, line_score, team_stats]
+	for df in df_list:
+		df["id"] = df.index + 1
+		df.set_index(["id", "Date"], inplace=True)
+	boxscore_stats = pd.concat(df_list, axis=1) # join='inner'
+	boxscore_stats.reset_index(inplace=True)
 
 	return boxscore_stats
