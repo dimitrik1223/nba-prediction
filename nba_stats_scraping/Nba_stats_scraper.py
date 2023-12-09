@@ -1,4 +1,5 @@
 import time
+import logging
 import pandas as pd
 import datetime as dt
 import logging
@@ -8,6 +9,8 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup, Comment
 from .utils import fetch_paths, retry_request, file_writer
+
+logging.basicConfig(level=logging.DEBUG)
 
 async def grab_url_html(session, url, selector, sleep=5, retries=3):
 	"""
@@ -34,6 +37,7 @@ async def grab_url_html(session, url, selector, sleep=5, retries=3):
 async def scrape_schedule_urls(session, year):
 	# Fetch filter elements containing URLs to game schedules per month
 	url = f"https://www.basketball-reference.com/leagues/NBA_{year}_games.html"
+	print(url)
 
 	return await grab_url_html(session, url, "#content .filter a")
 
@@ -41,7 +45,8 @@ async def scrape_schedules(year_start, year_end):
 	box_score_urls = []
 	async with aiohttp.ClientSession() as session:
 		tasks = []
-		for year in range(year_start, year_end + 1):
+		# Schedules page is index by the second year of a season
+		for year in range(year_end, year_end + 1):
 			tasks.append(scrape_schedule_urls(session, year))
 
 		# Fetch monthly schedule URLs concurrently
@@ -54,7 +59,7 @@ async def scrape_schedules(year_start, year_end):
 				season = f"{season_start}_{season_end}"
 				url = f"https://www.basketball-reference.com{a['href']}" 
 				schedule_table = await grab_url_html(session, url, "#all_schedule")
-				file_writer(f"schedules/{season}_schedule", month, schedule_table, parsed=True)
+				file_writer(f"schedules/{season}_schedules", month, schedule_table, parsed=True)
 		logging.info("Done scraping season schedules")
 			
 		return box_score_urls
@@ -109,6 +114,8 @@ def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) ->
 			for path in files:
 				add_team_stats = False
 				with open(path, "r") as file:
+					start_time = time.time()
+					logging.debug(f"Started parsing {path} at: {start_time}")
 					html = file.read()
 					soup = BeautifulSoup(html, "html.parser")
 					# Add HTML team stat table ids dynamically
@@ -142,6 +149,8 @@ def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) ->
 					if add_team_stats:
 						for id in team_stat_ids:
 							html_ids.remove(id)
+					end_time = time.time()
+					logging.debug(f"Finished at: {end_time} - took {end_time - start_time} seconds")
 
 	for key, value in table_dict.items():
 		if value != []:
@@ -149,8 +158,8 @@ def parse_html_files(html_ids: list[str], target_dir=None, path_sub_str=None) ->
 
 	return table_dict
 
-async def scrape_boxscores():
-	schedule_dirs = fetch_paths(True, contains="schedule")
+async def scrape_boxscores(target_dir):
+	schedule_dirs = fetch_paths(True, target_dir=target_dir)
 	for dir in schedule_dirs:
 		season_sch_dir = Path(dir)
 		for item in season_sch_dir.iterdir():
