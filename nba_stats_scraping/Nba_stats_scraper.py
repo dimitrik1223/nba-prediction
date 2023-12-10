@@ -2,6 +2,7 @@ import time
 import logging
 import pandas as pd
 import datetime as dt
+from datetime import datetime
 import logging
 import asyncio
 import aiohttp
@@ -22,11 +23,12 @@ async def grab_url_html(session, url, selector, sleep=5, retries=3):
 		# Exponential backoff
 		sleep_dur = sleep ** i
 		time.sleep(sleep_dur)
-		print(f"ZzZ... slept for {sleep_dur} seconds")
+		logging.debug(f"Slept {sleep_dur} seconds")
 		try:
 			async with session.get(url) as response:
 				html = await response.text()
 				soup = BeautifulSoup(html, "html.parser")
+				logging.debug("Made HTML soup")
 				parsed_html =  soup.select(selector)
 				return parsed_html
 		except:
@@ -53,14 +55,20 @@ async def scrape_schedules(year_start, year_end):
 		for month_url in month_urls_list:
 			for a in month_url:
 				month = a["href"].split('_')[2].split('-')[1].split('.')[0]
-				season_end = int(a["href"].split('_')[1])
-				season_start = season_end - 1
-				season = f"{season_start}_{season_end}"
-				url = f"https://www.basketball-reference.com{a['href']}" 
-				schedule_table = await grab_url_html(session, url, "#all_schedule")
-				file_writer(f"schedules/{season}_schedules", month, schedule_table, parsed=True)
+				month_int = int(datetime.today().strftime('%m'))
+				schedule_month_int = int(datetime.strptime(month, '%B').strftime('%m'))
+				if month_int >= schedule_month_int:
+					if schedule_month_int == 1:
+						logging.info("Done scraping season schedules")
+						return box_score_urls
+					season_end = int(a["href"].split('_')[1])
+					season_start = season_end - 1
+					season = f"{season_start}_{season_end}"
+					url = f"https://www.basketball-reference.com{a['href']}" 
+					schedule_table = await grab_url_html(session, url, "#all_schedule")
+					file_writer(f"schedules/{season}_schedules", month, schedule_table, parsed=True)
+
 		logging.info("Done scraping season schedules")
-			
 		return box_score_urls
 
 def uncomment_html(soup, id):
